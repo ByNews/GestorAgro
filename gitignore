@@ -1,0 +1,22 @@
+# Dependencias — nunca subir pro GitHub
+node_modules/
+
+# Executavel gerado
+distribuicao/
+dist/
+
+# Variaveis de ambiente (dados sensiveis)
+.env
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporarios
+*.tmp
+_write_cf.tmp

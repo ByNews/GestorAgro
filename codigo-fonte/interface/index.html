@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; connect-src http://localhost:4312 http://127.0.0.1:4312;">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestor Agro</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+
+  <!-- SPLASH SCREEN -->
+  <div id="splash-screen">
+    <div class="splash-bg"></div>
+    <div class="splash-content">
+      <div class="splash-logo">
+        <div class="splash-icon">🌿</div>
+        <div class="splash-rings">
+          <div class="splash-ring r1"></div>
+          <div class="splash-ring r2"></div>
+          <div class="splash-ring r3"></div>
+        </div>
+      </div>
+      <div class="splash-name">Gestor Agro</div>
+      <div class="splash-sub">gestão de fazenda com foco em qualidade</div>
+      <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
+      <div class="splash-status" id="splash-status">Iniciando sistema...</div>
+    </div>
+    <div class="splash-version">v11</div>
+  </div>
+
+  <div id="login-screen" class="screen">
+    <!-- lado esquerdo: painel de apresentação -->
+    <div class="login-side">
+      <div class="login-side-content">
+        <div class="login-side-tagline">Gestor Agro · v11</div>
+        <div class="login-side-title">Gestão da sua fazenda em um só lugar</div>
+        <div class="login-side-desc">Pecuária, agricultura, financeiro e estoque integrados com indicadores de qualidade em tempo real.</div>
+      </div>
+      <div class="login-side-pills">
+        <div class="login-pill"><span class="login-pill-ico">🐄</span> Monitoramento de rebanho</div>
+        <div class="login-pill"><span class="login-pill-ico">🌱</span> Indicadores de lavoura</div>
+        <div class="login-pill"><span class="login-pill-ico">💰</span> Controle financeiro</div>
+      </div>
+    </div>
+    <!-- lado direito: formulário -->
+    <div class="login-form-side">
+      <div class="login-form-logo">
+        <div class="login-form-logo-icon">🌿</div>
+        <div class="login-form-logo-name">Gestor Agro</div>
+      </div>
+      <div class="login-form-h">Bem-vindo de volta</div>
+      <div class="login-form-sub">Faça login para acessar o painel da fazenda</div>
+      <form id="login-form">
+        <label>Usuário</label>
+        <input type="text" id="login-username" autocomplete="username" required />
+        <label>Senha</label>
+        <input type="password" id="login-password" autocomplete="current-password" required />
+        <button type="submit" class="primary full">Entrar</button>
+      </form>
+      <div id="login-error" class="error-text"></div>
+      <div class="login-version">GESTOR AGRO · v11</div>
+    </div>
+  </div>
+
+  <div id="app-screen" class="screen app-shell">
+    <header class="global-header modern-header">
+      <button id="brand-btn" class="brand-shell" type="button">
+        <div class="brand-pill">
+          <!-- LOGO: substitua o conteúdo de .brand-logo-icon pela sua logo futuramente -->
+          <div class="brand-logo-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4cdf8a" stroke-width="2.2" stroke-linecap="round">
+              <path d="M12 22V12M12 12C12 7 17 3 21 3C21 8 18 12 12 12ZM12 12C12 7 7 3 3 3C3 8 6 12 12 12Z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="app-title">Gestor Agro</div>
+            <div class="app-farm-name" id="app-farm-name"></div>
+          </div>
+
+          <!-- DROPDOWN da fazenda -->
+          <div class="brand-dropdown" id="brand-dropdown">
+            <div class="brand-drop-header">
+              <div class="brand-drop-sys-label">Sistema</div>
+              <div class="brand-drop-sys-name">Gestor Agro</div>
+              <div class="brand-drop-farm-name" id="drop-farm-name">—</div>
+            </div>
+            <div class="brand-drop-divider"></div>
+            <div class="brand-drop-body">
+              <div class="brand-drop-row">
+                <div class="brand-drop-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#4cdf8a" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <div>
+                  <div class="brand-drop-label">Localização</div>
+                  <div class="brand-drop-value" id="drop-location">—</div>
+                </div>
+              </div>
+              <div class="brand-drop-row">
+                <div class="brand-drop-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#4cdf8a" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                </div>
+                <div>
+                  <div class="brand-drop-label">Área total</div>
+                  <div class="brand-drop-value" id="drop-area">—</div>
+                </div>
+              </div>
+              <div class="brand-drop-row">
+                <div class="brand-drop-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#4cdf8a" stroke-width="2" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <div>
+                  <div class="brand-drop-label">Funcionários ativos</div>
+                  <div class="brand-drop-value" id="drop-employees">—</div>
+                </div>
+              </div>
+            </div>
+            <div class="brand-drop-stats">
+              <div class="brand-drop-stat">
+                <div class="brand-drop-stat-val" id="drop-animals">—</div>
+                <div class="brand-drop-stat-lbl">Animais ativos</div>
+              </div>
+              <div class="brand-drop-stat">
+                <div class="brand-drop-stat-val" id="drop-paddocks">—</div>
+                <div class="brand-drop-stat-lbl">Pastos</div>
+              </div>
+              <div class="brand-drop-stat">
+                <div class="brand-drop-stat-val" id="drop-plots">—</div>
+                <div class="brand-drop-stat-lbl">Talhões</div>
+              </div>
+              <div class="brand-drop-stat">
+                <div class="brand-drop-stat-val" id="drop-items">—</div>
+                <div class="brand-drop-stat-lbl">Itens em estoque</div>
+              </div>
+            </div>
+            <div class="brand-drop-footer">
+              <div class="brand-drop-user">Logado como <strong id="drop-username">—</strong></div>
+              <div class="brand-drop-badge">v9</div>
+            </div>
+          </div>
+
+        </div>
+      </button>
+      <nav class="shortcut-bar top-tabs" id="shortcut-bar"></nav>
+      <div class="header-actions modern-actions">
+        <div class="user-menu">
+          <button id="user-menu-btn" class="user-menu-btn" type="button">
+            <span id="user-badge" class="user-badge"></span>
+            <span class="caret">▾</span>
+          </button>
+          <div id="user-dropdown" class="user-dropdown hidden">
+            <button id="switch-user-btn" class="dropdown-item" type="button">Trocar usuário</button>
+            <button id="manage-users-btn" class="dropdown-item" type="button">Usuários</button>
+            <button id="settings-btn" class="dropdown-item" type="button">Configurações</button>
+          </div>
+        </div>
+        <button id="home-btn" class="ghost compact hidden">Início</button>
+        <button id="refresh-btn" class="ghost compact hidden">Atualizar</button>
+      </div>
+    </header>
+
+    <div class="workspace" id="main-workspace">
+      <aside class="sidebar" id="module-sidebar">
+        <div class="sidebar-title">Navegação</div>
+        <nav id="nav-list" class="nav-list"></nav>
+      </aside>
+
+      <main class="main-content" id="main-content">
+        <section id="home-section" class="view">
+          <div class="hero-card modern-hero">
+            <div>
+              <div class="hero-kicker">Painel principal</div>
+              <h1>Organize sua operação rural em um único lugar.</h1>
+              <p>Acompanhe os principais módulos, indicadores e mapas da fazenda com uma experiência mais clara e moderna.</p>
+            </div>
+            <div class="hero-pill">Sistema operacional</div>
+          </div>
+          <div class="cards-grid quick-links" id="quick-links"></div>
+          <div class="home-charts" id="home-charts"></div>
+          <div class="cards-grid dashboard-cards" id="dashboard-cards"></div>
+        </section>
+
+        <section id="crud-section" class="view">
+          <div class="module-header">
+            <div>
+              <h1 id="page-title">Cadastro</h1>
+              <p id="page-subtitle">Gerencie os registros</p>
+            </div>
+            <div class="toolbar-right">
+              <button id="new-record-btn" class="primary">Novo registro</button>
+            </div>
+          </div>
+          <div class="toolbar slim">
+            <div class="toolbar-left">
+              <input id="search-input" type="text" placeholder="Pesquisar..." />
+            </div>
+            <div class="table-meta" id="table-meta"></div>
+          </div>
+          <div class="panel table-panel">
+            <div class="panel-title" id="table-title"></div>
+            <div class="table-wrap">
+              <table>
+                <thead id="table-head"></thead>
+                <tbody id="table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="reports-section" class="view">
+          <div class="module-header">
+            <div>
+              <h1>Relatórios</h1>
+              <p>Resumo financeiro da operação</p>
+            </div>
+                        <div class="toolbar-right reports-filter" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px">
+              <label id="report-start-label" style="font-size:12px">Início</label>
+              <input id="report-start" type="date" style="font-size:12px;padding:5px 8px" />
+              <label id="report-end-label" style="font-size:12px">Fim</label>
+              <input id="report-end" type="date" style="font-size:12px;padding:5px 8px" />
+              <span id="inmet-uf-label" class="hidden" style="font-size:12px">UF</span>
+              <input id="inmet-uf" class="hidden inmet-uf-input" type="text" maxlength="2" placeholder="UF" style="width:48px;font-size:12px;padding:5px 8px" />
+              <input id="inmet-city" class="hidden inmet-city-input" type="text" placeholder="Cidade" style="font-size:12px;padding:5px 8px;min-width:100px" />
+              <span id="inmet-city-label" class="hidden"></span>
+              <span id="inmet-report-mode-label" class="hidden"></span>
+              <select id="inmet-report-mode" class="hidden" style="font-size:12px;padding:5px 8px">
+                <option value="resumo">Resumo Agro</option>
+                <option value="alertas">Alertas Agro</option>
+                <option value="periodos">Períodos previstos</option>
+              </select>
+              <label id="inmet-period-start-label" class="hidden" style="font-size:12px">De</label>
+              <input id="inmet-period-start" class="hidden inmet-period-input" type="date" style="font-size:12px;padding:5px 8px" />
+              <label id="inmet-period-end-label" class="hidden" style="font-size:12px">Até</label>
+              <input id="inmet-period-end" class="hidden inmet-period-input" type="date" style="font-size:12px;padding:5px 8px" />
+              <div id="inmet-period-quick" class="hidden" style="display:flex;gap:4px;align-items:center">
+                <button id="inmet-quick-7" class="ghost compact" type="button" style="font-size:11px;padding:5px 10px">7 DIAS</button>
+                <button id="inmet-quick-15" class="ghost compact" type="button" style="font-size:11px;padding:5px 10px">15 DIAS</button>
+              </div>
+              <button id="load-reports-btn" class="primary" style="font-size:12px;padding:6px 14px">Atualizar</button>
+            </div>
+          </div>
+          <div class="cards-grid" id="report-cards"></div>
+          <div class="dashboard-grid">
+            <div class="panel tall">
+              <div class="panel-title" id="reports-left-title">Fluxo de caixa mensal</div>
+              <div id="cashflow-list"></div>
+            </div>
+            <div class="panel tall">
+              <div class="panel-title" id="reports-right-title">Custos por centro de custo</div>
+              <div id="cost-center-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="settings-section" class="view">
+          <div class="module-header">
+            <div>
+              <h1 id="settings-title">Parâmetros do Sistema</h1>
+              <p id="settings-subtitle">Controle o comportamento global da aplicação.</p>
+            </div>
+          </div>
+          <div id="settings-content" class="settings-content"></div>
+        </section>
+
+        <section id="map-section" class="view" style="display:none;flex-direction:column;height:100%;padding:0;overflow:hidden">
+          <div class="module-header" id="map-module-header" style="padding:20px 20px 0 20px">
+            <div>
+              <h1 id="map-title">Mapa</h1>
+              <p id="map-subtitle">Acompanhamento visual da qualidade</p>
+            </div>
+          </div>
+          <div id="map-content" class="map-content" style="flex:1;min-height:0;padding:0 20px 16px 20px"></div>
+        </section>
+      </main>
+
+      <!-- Mapa Interativo: renderizado fora do main-content para evitar herança de CSS -->
+      <div id="mapa-interativo-root" style="display:none;flex:1;overflow:hidden;background:#fff;"></div>
+    </div>
+  </div>
+
+  <div id="modal-overlay" class="modal-overlay hidden"></div>
+
+  <script src="./mapa-interativo.js"></script>
+  <script src="./renderer.js"></script>
+</body>
+</html>
+
