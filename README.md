@@ -48,3 +48,10 @@ Login inicial:
 --------------
   Usuário: DEV
   Senha:   352155
+
+Imagens:
+---------
+
+<img width="1909" height="940" alt="Tela_Inicial" src="https://github.com/user-attachments/assets/7f420a11-fe02-4c7b-9bfe-d02be077a30e" />
+<img width="1914" height="905" alt="image" src="https://github.com/user-attachments/assets/c5fd292f-06a1-406b-825f-fe3abe9b8199" />
+
