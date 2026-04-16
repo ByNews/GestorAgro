@@ -29,7 +29,7 @@ const TABLES = {
   payables: { table: 'payables', order: 'id desc', fields: ['supplier', 'due_date', 'payment_date', 'amount', 'status', 'purchase_id', 'notes'], searchable: ['supplier', 'status', 'notes'] },
   receivables: { table: 'receivables', order: 'id desc', fields: ['customer_name', 'due_date', 'receive_date', 'amount', 'status', 'sale_id', 'notes'], searchable: ['customer_name', 'status', 'notes'] },
   purchases: { table: 'purchases', order: 'id desc', fields: ['supplier', 'purchase_date', 'item_id', 'quantity', 'unit_price', 'taxes', 'status', 'notes'], searchable: ['supplier', 'status', 'notes'] },
-  sales: { table: 'sales', order: 'id desc', fields: ['customer_name', 'sale_date', 'sale_type', 'animal_id', 'item_id', 'quantity', 'unit_price', 'status', 'notes'], searchable: ['customer_name', 'sale_type', 'status', 'notes'] }
+  sales: { table: 'sales', order: 'id desc', fields: ['customer_name', 'sale_date', 'sale_type', 'sale_scope', 'animal_id', 'lot_id', 'item_id', 'quantity', 'unit_price', 'status', 'notes'], searchable: ['customer_name', 'sale_type', 'sale_scope', 'status', 'notes'] }
 };
 
 function hashPassword(password) {
@@ -208,10 +208,12 @@ module.exports = async function startServer(config) {
   const pool = new Pool({ host: config.host, port: config.port, user: config.user, password: config.password, database: config.database });
   const sessions = new Map();
   const inmetService = createInmetService();
+  const interfaceDir = path.resolve(__dirname, '../interface');
 
   await pool.query('SELECT 1');
   await runSchema(pool);
   app.use(express.json());
+  app.use(express.static(interfaceDir));
 
   app.get('/health', (_req, res) => res.json({ ok: true }));
 
@@ -296,12 +298,12 @@ module.exports = async function startServer(config) {
 
   app.get('/api/lookups', async (_req, res) => {
     const [farms, plots, paddocks, employees, lots, animals, items] = await Promise.all([
-      pool.query('SELECT id, name FROM farms ORDER BY name'),
-      pool.query('SELECT id, name FROM plots ORDER BY name'),
-      pool.query('SELECT id, name FROM paddocks ORDER BY name'),
-      pool.query('SELECT id, name FROM employees ORDER BY name'),
+      pool.query('SELECT id, name, location, total_area FROM farms ORDER BY name'),
+      pool.query('SELECT id, farm_id, name, area, current_crop, coordinates FROM plots ORDER BY name'),
+      pool.query('SELECT id, farm_id, name, area, grass_type, status FROM paddocks ORDER BY name'),
+      pool.query('SELECT id, farm_id, name, role_name, contact, status FROM employees ORDER BY name'),
       pool.query('SELECT id, name FROM lots ORDER BY name'),
-      pool.query('SELECT id, ear_tag AS name, paddock_id FROM animals ORDER BY ear_tag'),
+      pool.query('SELECT id, ear_tag AS name, paddock_id, lot_id, status FROM animals ORDER BY ear_tag'),
       pool.query('SELECT id, name FROM inventory_items ORDER BY name')
     ]);
     res.json({ farms: farms.rows, plots: plots.rows, paddocks: paddocks.rows, employees: employees.rows, lots: lots.rows, animals: animals.rows, inventory_items: items.rows });
@@ -374,17 +376,116 @@ module.exports = async function startServer(config) {
     } finally { client.release(); }
   });
 
+  app.post('/api/animals/register', authorize('animals', 'create'), async (req, res) => {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const {
+        entry_mode = 'unidade',
+        farm_id,
+        lot_id,
+        paddock_id,
+        ear_tag,
+        ear_tag_prefix,
+        quantity = 1,
+        species = 'bovino',
+        sex,
+        breed,
+        birth_date,
+        category,
+        status = 'ativo'
+      } = req.body;
+
+      let createdRows = [];
+
+      if (entry_mode === 'lote') {
+        const total = Math.max(1, toNumber(quantity, 1));
+        const prefix = String(ear_tag_prefix || '').trim();
+        if (!prefix) throw new Error('Informe o prefixo do brinco para o lançamento por lote.');
+        const existingTags = await client.query('SELECT ear_tag FROM animals WHERE ear_tag ILIKE $1', [`${prefix}-%`]);
+        const usedNumbers = new Set(
+          (existingTags.rows || [])
+            .map((row) => {
+              const match = String(row.ear_tag || '').match(new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-(\\d+)$`));
+              return match ? Number(match[1]) : null;
+            })
+            .filter((num) => Number.isFinite(num))
+        );
+        const tags = [];
+        let sequence = 1;
+        while (tags.length < total) {
+          if (!usedNumbers.has(sequence)) {
+            tags.push(`${prefix}-${String(sequence).padStart(3, '0')}`);
+          }
+          sequence += 1;
+        }
+        for (const tag of tags) {
+          const inserted = await client.query(
+            'INSERT INTO animals (farm_id, lot_id, paddock_id, ear_tag, species, sex, breed, birth_date, category, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *',
+            [farm_id || null, lot_id || null, paddock_id || null, tag, species, sex || null, breed || null, birth_date || null, category || null, status]
+          );
+          createdRows.push(inserted.rows[0]);
+        }
+      } else {
+        if (!ear_tag) throw new Error('Informe o brinco para o lançamento por unidade.');
+        const inserted = await client.query(
+          'INSERT INTO animals (farm_id, lot_id, paddock_id, ear_tag, species, sex, breed, birth_date, category, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *',
+          [farm_id || null, lot_id || null, paddock_id || null, ear_tag, species, sex || null, breed || null, birth_date || null, category || null, status]
+        );
+        createdRows = [inserted.rows[0]];
+      }
+
+      await client.query('COMMIT');
+      res.json({ data: createdRows[0], items: createdRows, createdCount: createdRows.length });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      if (String(error.message || '').toLowerCase().includes('duplicate key')) {
+        return res.status(400).json({ error: 'Já existe animal cadastrado com esse brinco ou prefixo informado.' });
+      }
+      res.status(400).json({ error: error.message });
+    } finally { client.release(); }
+  });
+
   app.post('/api/sales/register', authorize('sales', 'create'), async (req, res) => {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      const { customer_name, sale_date, sale_type, animal_id, item_id, quantity = 1, unit_price, status = 'aberto', notes = '', due_date } = req.body;
-      const total = toNumber(quantity, 1) * toNumber(unit_price);
-      const sale = await client.query('INSERT INTO sales (customer_name, sale_date, sale_type, animal_id, item_id, quantity, unit_price, status, notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *', [customer_name, sale_date, sale_type, animal_id || null, item_id || null, quantity, unit_price, status, notes]);
-      if (sale_type === 'animal' && animal_id) await client.query('UPDATE animals SET status = $1, updated_at = NOW() WHERE id = $2', ['vendido', animal_id]);
+      const { customer_name, sale_date, sale_type, sale_scope = 'unidade', animal_id, lot_id, item_id, quantity = 1, unit_price, status = 'aberto', notes = '', due_date } = req.body;
+      let effectiveAnimalId = animal_id || null;
+      let effectiveLotId = lot_id || null;
+      let effectiveQuantity = toNumber(quantity, 1);
+
+      if (sale_type === 'animal') {
+        if (sale_scope === 'lote') {
+          if (!lot_id) throw new Error('Selecione o lote para lançamento por lote.');
+          if (effectiveQuantity <= 0) throw new Error('Informe uma quantidade válida para o lote.');
+          const availableAnimals = await client.query(
+            `SELECT id FROM animals WHERE lot_id = $1 AND status = 'ativo' ORDER BY id LIMIT $2`,
+            [lot_id, effectiveQuantity]
+          );
+          if (availableAnimals.rows.length < effectiveQuantity) {
+            throw new Error(`O lote selecionado possui apenas ${availableAnimals.rows.length} animal(is) ativo(s).`);
+          }
+          const ids = availableAnimals.rows.map((row) => row.id);
+          await client.query('UPDATE animals SET status = $1, paddock_id = NULL, updated_at = NOW() WHERE id = ANY($2::int[])', ['vendido', ids]);
+          effectiveAnimalId = null;
+        } else {
+          if (!animal_id) throw new Error('Selecione o animal para lançamento por unidade.');
+          const animalRow = await client.query('SELECT lot_id FROM animals WHERE id = $1', [animal_id]);
+          effectiveLotId = animalRow.rows[0]?.lot_id || null;
+          effectiveQuantity = 1;
+          await client.query('UPDATE animals SET status = $1, paddock_id = NULL, updated_at = NOW() WHERE id = $2', ['vendido', animal_id]);
+        }
+      }
+
+      const total = effectiveQuantity * toNumber(unit_price);
+      const sale = await client.query(
+        'INSERT INTO sales (customer_name, sale_date, sale_type, sale_scope, animal_id, lot_id, item_id, quantity, unit_price, status, notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *',
+        [customer_name, sale_date, sale_type, sale_scope, effectiveAnimalId, effectiveLotId, item_id || null, effectiveQuantity, unit_price, status, notes]
+      );
       if (sale_type === 'produto' && item_id) {
-        await client.query('UPDATE inventory_items SET current_stock = COALESCE(current_stock,0) - $1, updated_at = NOW() WHERE id = $2', [quantity, item_id]);
-        await client.query('INSERT INTO inventory_moves (item_id, move_type, move_date, quantity, origin_destiny, unit_cost, link_type, link_id, notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)', [item_id, 'saida', sale_date, quantity, customer_name, unit_price, 'sale', sale.rows[0].id, notes]);
+        await client.query('UPDATE inventory_items SET current_stock = COALESCE(current_stock,0) - $1, updated_at = NOW() WHERE id = $2', [effectiveQuantity, item_id]);
+        await client.query('INSERT INTO inventory_moves (item_id, move_type, move_date, quantity, origin_destiny, unit_cost, link_type, link_id, notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)', [item_id, 'saida', sale_date, effectiveQuantity, customer_name, unit_price, 'sale', sale.rows[0].id, notes]);
       }
       await client.query('INSERT INTO receivables (customer_name, due_date, amount, status, sale_id, notes) VALUES ($1,$2,$3,$4,$5,$6)', [customer_name, due_date || sale_date, total, status === 'pago' ? 'pago' : 'aberto', sale.rows[0].id, notes]);
       await client.query('INSERT INTO finance_entries (entry_type, competence_date, payment_date, amount, payment_method, category, cost_center, link_type, link_id, description, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)', ['receita', sale_date, status === 'pago' ? sale_date : null, total, null, 'Venda', sale_type === 'animal' ? 'pecuaria' : 'agricultura', 'sale', sale.rows[0].id, `Venda para ${customer_name}`, status === 'pago' ? 'pago' : 'aberto']);
@@ -529,6 +630,10 @@ module.exports = async function startServer(config) {
     }
   });
   registerMapRoutes(app, pool, authorize);
+
+  app.get('/', (_req, res) => {
+    res.sendFile(path.join(interfaceDir, 'index.html'));
+  });
 
   const server = app.listen(port);
   server.on('close', async () => { await pool.end(); });

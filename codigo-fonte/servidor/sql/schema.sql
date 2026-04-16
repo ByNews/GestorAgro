@@ -205,7 +205,9 @@ CREATE TABLE IF NOT EXISTS sales (
   customer_name VARCHAR(120) NOT NULL,
   sale_date DATE NOT NULL,
   sale_type VARCHAR(20) NOT NULL,
+  sale_scope VARCHAR(20) DEFAULT 'unidade',
   animal_id INTEGER REFERENCES animals(id) ON DELETE SET NULL,
+  lot_id INTEGER REFERENCES lots(id) ON DELETE SET NULL,
   item_id INTEGER REFERENCES inventory_items(id) ON DELETE SET NULL,
   quantity NUMERIC(12,2),
   unit_price NUMERIC(12,2) NOT NULL,
@@ -219,6 +221,9 @@ CREATE INDEX IF NOT EXISTS idx_animals_status ON animals(status);
 CREATE INDEX IF NOT EXISTS idx_animal_events_animal ON animal_events(animal_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_moves_item ON inventory_moves(item_id);
 CREATE INDEX IF NOT EXISTS idx_finance_entries_type ON finance_entries(entry_type);
+
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS sale_scope VARCHAR(20) DEFAULT 'unidade';
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS lot_id INTEGER REFERENCES lots(id) ON DELETE SET NULL;
 
 UPDATE users SET role = 'ADMIN', active = TRUE, access_groups = ARRAY['farm','livestock','stock','agriculture','finance','settings'] WHERE username = 'DEV';
 

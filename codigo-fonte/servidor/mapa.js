@@ -57,6 +57,66 @@ const FIELD_TEMPLATES = {
 };
 
 function registerMapRoutes(app, pool, authorize) {
+  function normalizeAreaAlias(value) {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .replace(/_+/g, '_');
+  }
+
+  async function resolveAreaLivestock(areaId) {
+    const areaResult = await pool.query(
+      `SELECT ma.name, ma.area_key, ma.paddock_id, fm.farm_id
+       FROM map_areas ma
+       JOIN farm_maps fm ON fm.id = ma.map_id
+       WHERE ma.id = $1`,
+      [areaId]
+    );
+    if (!areaResult.rows.length) return { paddockIds: [], farmId: null };
+
+    const { name: areaName, area_key: areaKey, paddock_id: directPaddockId, farm_id: farmId } = areaResult.rows[0];
+
+    const areaAliases = new Set(
+      [areaName, areaKey]
+        .map((value) => normalizeAreaAlias(value))
+        .filter(Boolean)
+    );
+    const paddockRows = await pool.query(
+      `SELECT id, name
+       FROM paddocks
+       WHERE ($1::int IS NULL OR farm_id = $1)
+         AND (status IS NULL OR LOWER(status) = 'ativo')`,
+      [farmId || null]
+    );
+    const matchedPaddocks = paddockRows.rows.filter((row) => {
+      const paddockAlias = normalizeAreaAlias(row.name);
+      return paddockAlias && areaAliases.has(paddockAlias);
+    });
+
+    if (directPaddockId) {
+      const directPaddock = paddockRows.rows.find((row) => Number(row.id) === Number(directPaddockId));
+      const directAlias = directPaddock ? normalizeAreaAlias(directPaddock.name) : '';
+      if (matchedPaddocks.length && (!directAlias || !areaAliases.has(directAlias))) {
+        return { paddockIds: matchedPaddocks.map((r) => Number(r.id)).filter((id) => Number.isFinite(id)), farmId };
+      }
+      return {
+        paddockIds: [Number(directPaddockId), ...matchedPaddocks.map((r) => Number(r.id))]
+          .filter((id) => Number.isFinite(id))
+          .filter((id, index, list) => list.indexOf(id) === index),
+        farmId
+      };
+    }
+
+    if (matchedPaddocks.length) {
+      return { paddockIds: matchedPaddocks.map((r) => Number(r.id)).filter((id) => Number.isFinite(id)), farmId };
+    }
+
+    return { paddockIds: [], farmId };
+  }
+
   // ── Listar mapas da fazenda ────────────────────────────────────
   app.get('/api/farm-maps', authorize('reports', 'read'), async (req, res) => {
     try {
@@ -255,61 +315,67 @@ function registerMapRoutes(app, pool, authorize) {
   app.get('/api/map-areas/:areaId/animal-count', authorize('reports', 'read'), async (req, res) => {
     try {
       const areaId = parseInt(req.params.areaId, 10);
-
-      // Busca dados da area + farm_id via join com farm_maps
-      const areaResult = await pool.query(
-        `SELECT ma.name, ma.area_key, ma.paddock_id, fm.farm_id
-         FROM map_areas ma
-         JOIN farm_maps fm ON fm.id = ma.map_id
-         WHERE ma.id = $1`,
-        [areaId]
+      const { paddockIds } = await resolveAreaLivestock(areaId);
+      if (!paddockIds.length) return res.json({ count: 0 });
+      const countResult = await pool.query(
+        `SELECT COUNT(id)::int AS count FROM animals
+         WHERE paddock_id = ANY($1::int[]) AND (status IS NULL OR LOWER(status) = 'ativo')`,
+        [paddockIds]
       );
-      if (!areaResult.rows.length) return res.json({ count: 0 });
-
-      const { name: areaName, area_key: areaKey, paddock_id: directPaddockId, farm_id: farmId } = areaResult.rows[0];
-
-      // 1) Vinculo direto: usa o paddock_id salvo na area
-      if (directPaddockId) {
-        const countResult = await pool.query(
-          `SELECT COUNT(id)::int AS count FROM animals
-           WHERE paddock_id = $1 AND (status IS NULL OR LOWER(status) = 'ativo')`,
-          [directPaddockId]
-        );
-        return res.json({ count: Number(countResult.rows[0].count || 0) });
-      }
-
-      // 2) Fallback por nome do pasto
-      const paddockRows = await pool.query(
-        `SELECT id FROM paddocks WHERE
-           LOWER(name) = LOWER($1)
-           OR LOWER(name) = LOWER($2)
-           OR LOWER(REGEXP_REPLACE(name, '[^a-z0-9]', '_', 'gi')) = LOWER($2)`,
-        [areaName, areaKey]
-      );
-
-      if (paddockRows.rows.length) {
-        const paddockIds = paddockRows.rows.map((r) => Number(r.id)).filter((id) => Number.isFinite(id));
-        const countResult = await pool.query(
-          `SELECT COUNT(id)::int AS count FROM animals
-           WHERE paddock_id = ANY($1::int[]) AND (status IS NULL OR LOWER(status) = 'ativo')`,
-          [paddockIds]
-        );
-        return res.json({ count: Number(countResult.rows[0].count || 0) });
-      }
-
-      // 3) Fallback final: total de animais ativos da fazenda
-      if (farmId) {
-        const countResult = await pool.query(
-          `SELECT COUNT(id)::int AS count FROM animals
-           WHERE farm_id = $1 AND (status IS NULL OR LOWER(status) = 'ativo')`,
-          [farmId]
-        );
-        return res.json({ count: Number(countResult.rows[0].count || 0) });
-      }
-
-      res.json({ count: 0 });
+      res.json({ count: Number(countResult.rows[0].count || 0) });
     } catch (_err) {
       res.json({ count: 0 });
+    }
+  });
+
+  app.get('/api/map-areas/:areaId/livestock-summary', authorize('reports', 'read'), async (req, res) => {
+    try {
+      const areaId = parseInt(req.params.areaId, 10);
+      const { paddockIds } = await resolveAreaLivestock(areaId);
+      if (!paddockIds.length) {
+        return res.json({ count: 0, lots: [], predominant_breed: '', categories: '' });
+      }
+
+      const animalsResult = await pool.query(
+        `SELECT a.id, a.breed, a.category, a.lot_id, l.name AS lot_name
+         FROM animals a
+         LEFT JOIN lots l ON l.id = a.lot_id
+         WHERE a.paddock_id = ANY($1::int[])
+           AND (a.status IS NULL OR LOWER(a.status) = 'ativo')`,
+        [paddockIds]
+      );
+
+      const animals = animalsResult.rows || [];
+      const breedCount = new Map();
+      const categoryCount = new Map();
+      const lotCount = new Map();
+
+      for (const animal of animals) {
+        const breed = String(animal.breed || '').trim();
+        const category = String(animal.category || '').trim();
+        const lotName = String(animal.lot_name || '').trim();
+        if (breed) breedCount.set(breed, (breedCount.get(breed) || 0) + 1);
+        if (category) categoryCount.set(category, (categoryCount.get(category) || 0) + 1);
+        if (lotName) lotCount.set(lotName, (lotCount.get(lotName) || 0) + 1);
+      }
+
+      const topBreed = [...breedCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+      const categorySummary = [...categoryCount.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, qty]) => `${name} (${qty})`)
+        .join(', ');
+      const lots = [...lotCount.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([name, qty]) => ({ name, quantity: qty }));
+
+      res.json({
+        count: animals.length,
+        lots,
+        predominant_breed: topBreed,
+        categories: categorySummary
+      });
+    } catch (_err) {
+      res.json({ count: 0, lots: [], predominant_breed: '', categories: '' });
     }
   });
   // ── Listar pastos para vinculo com area do mapa ───────────────

@@ -1,0 +1,58 @@
+# Dependencias
+node_modules/
+
+# Variaveis de ambiente e segredos
+.env
+.env.*
+!.env.exemplo
+!configuracoes/.env.exemplo
+
+# Builds, distribuicoes e artefatos gerados
+dist/
+build/
+distribuicao/
+out/
+release/
+releases/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Temporarios e cache
+*.tmp
+*.temp
+*.bak
+*.swp
+*_write_cf.tmp
+codigo-fonte/_write_cf.tmp
+.cache/
+.parcel-cache/
+.eslintcache
+
+# Testes e cobertura
+coverage/
+.nyc_output/
+
+# Banco local e arquivos de runtime
+*.sqlite
+*.sqlite3
+*.db
+*.pid
+
+# Sistema operacional e editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Arquivos antigos de empacotamento desktop
+*.exe
+*.msi
+*.dmg
+*.AppImage
+*.asar

@@ -1,9 +1,9 @@
-/**
- * mapa-interativo.js — Gestor Agro v5
+﻿/**
+ * mapa-interativo.js â€” Gestor Agro v5
  * Layout baseado no prototipo aprovado.
  */
 
-const API_MAP = 'http://localhost:4312/api';
+const API_MAP = `${window.location.origin}/api`;
 
 function esc(v) {
   return String(v == null ? '' : v).replace(/[&<>"']/g, (m) =>
@@ -43,7 +43,7 @@ function mapaConfirm(msg) {
       <div style="font-size:14px;color:#0f5132;font-weight:700;margin-bottom:20px;line-height:1.6;text-transform:uppercase">${msg}</div>
       <div style="display:flex;gap:12px;justify-content:center">
         <button id="_mc_yes" style="padding:10px 28px;background:#c0392b;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700">SIM</button>
-        <button id="_mc_no" style="padding:10px 28px;background:#fff;color:#0f5132;border:1.5px solid #0f5132;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700">NÃO</button>
+        <button id="_mc_no" style="padding:10px 28px;background:#fff;color:#0f5132;border:1.5px solid #0f5132;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700">NÃƒO</button>
       </div>
     </div>`;
     document.body.appendChild(el);
@@ -80,47 +80,47 @@ const AREA_COLORS = {
 };
 
 const AREA_TYPE_LABELS = {
-  pasto:'Pasto', talhao:'Talhão', reserva:'Reserva/APP',
-  represa:'Represa/Lago', curral:'Curral/Brete', sede:'Sede/Instalação', outro:'Outro'
+  pasto:'Pasto', talhao:'TalhÃ£o', reserva:'Reserva/APP',
+  represa:'Represa/Lago', curral:'Curral/Brete', sede:'Sede/InstalaÃ§Ã£o', outro:'Outro'
 };
 
 const FIELD_DEFS = {
   gado: [
     { key:'qtd_animais',      label:'Quantidade de Animais', unit:'cab' },
-    { key:'raca',             label:'Raça Predominante' },
+    { key:'raca',             label:'RaÃ§a Predominante' },
     { key:'categoria',        label:'Categoria', hint:'bezerros, novilhas...' },
-    { key:'lotacao',          label:'Lotação', unit:'UA/ha' },
-    { key:'peso_medio',       label:'Peso Médio', unit:'kg' },
-    { key:'data_vacinacao',   label:'Última Vacinação', type:'date' },
-    { key:'proxima_vacina',   label:'Próxima Vacinação', type:'date' },
-    { key:'observacoes_gado', label:'Observações', type:'textarea' }
+    { key:'lotacao',          label:'LotaÃ§Ã£o', unit:'UA/ha' },
+    { key:'peso_medio',       label:'Peso MÃ©dio', unit:'kg' },
+    { key:'data_vacinacao',   label:'Ãšltima VacinaÃ§Ã£o', type:'date' },
+    { key:'proxima_vacina',   label:'PrÃ³xima VacinaÃ§Ã£o', type:'date' },
+    { key:'observacoes_gado', label:'ObservaÃ§Ãµes', type:'textarea' }
   ],
   solo: [
     { key:'ph_solo',       label:'pH do Solo' },
-    { key:'mat_organica',  label:'Matéria Orgânica', unit:'%' },
-    { key:'fosforo',       label:'Fósforo', unit:'mg/dm³' },
-    { key:'potassio',      label:'Potássio', unit:'mg/dm³' },
-    { key:'calcio',        label:'Cálcio', unit:'cmol/dm³' },
-    { key:'magnesio',      label:'Magnésio', unit:'cmol/dm³' },
-    { key:'sat_bases',     label:'Saturação de Bases', unit:'%' },
-    { key:'recomendacao',  label:'Recomendação de Calagem/Adubação', type:'textarea' }
+    { key:'mat_organica',  label:'MatÃ©ria OrgÃ¢nica', unit:'%' },
+    { key:'fosforo',       label:'FÃ³sforo', unit:'mg/dmÂ³' },
+    { key:'potassio',      label:'PotÃ¡ssio', unit:'mg/dmÂ³' },
+    { key:'calcio',        label:'CÃ¡lcio', unit:'cmol/dmÂ³' },
+    { key:'magnesio',      label:'MagnÃ©sio', unit:'cmol/dmÂ³' },
+    { key:'sat_bases',     label:'SaturaÃ§Ã£o de Bases', unit:'%' },
+    { key:'recomendacao',  label:'RecomendaÃ§Ã£o de Calagem/AdubaÃ§Ã£o', type:'textarea' }
   ],
   pastagem: [
     { key:'tipo_pastagem', label:'Tipo', type:'select', options:['Pastagem','Lavoura','Misto'] },
-    { key:'especie',       label:'Espécie / Cultivar' },
-    { key:'area_ha',       label:'Área', unit:'ha' },
-    { key:'condicao',      label:'Condição', type:'select', options:['Ótima','Boa','Regular','Degradada'] },
-    { key:'data_plantio',  label:'Data do Plantio / Formação', type:'date' },
+    { key:'especie',       label:'EspÃ©cie / Cultivar' },
+    { key:'area_ha',       label:'Ãrea', unit:'ha' },
+    { key:'condicao',      label:'CondiÃ§Ã£o', type:'select', options:['Ã“tima','Boa','Regular','Degradada'] },
+    { key:'data_plantio',  label:'Data do Plantio / FormaÃ§Ã£o', type:'date' },
     { key:'produtividade', label:'Produtividade Estimada' },
-    { key:'obs_pastagem',  label:'Observações de Manejo', type:'textarea' }
+    { key:'obs_pastagem',  label:'ObservaÃ§Ãµes de Manejo', type:'textarea' }
   ],
   agua: [
-    { key:'fonte_hidrica',   label:'Fonte Hídrica', type:'select', options:['Rio','Açude','Poço','Córrego'] },
-    { key:'ph_agua',         label:'pH da Água' },
+    { key:'fonte_hidrica',   label:'Fonte HÃ­drica', type:'select', options:['Rio','AÃ§ude','PoÃ§o','CÃ³rrego'] },
+    { key:'ph_agua',         label:'pH da Ãgua' },
     { key:'turbidez',        label:'Turbidez', unit:'NTU' },
-    { key:'coliformes',      label:'Coliformes', type:'select', options:['Ausente','Presente','Não analisado'] },
-    { key:'disponibilidade', label:'Disponibilidade', type:'select', options:['Alta','Média','Baixa','Crítica'] },
-    { key:'obs_agua',        label:'Observações', type:'textarea' }
+    { key:'coliformes',      label:'Coliformes', type:'select', options:['Ausente','Presente','NÃ£o analisado'] },
+    { key:'disponibilidade', label:'Disponibilidade', type:'select', options:['Alta','MÃ©dia','Baixa','CrÃ­tica'] },
+    { key:'obs_agua',        label:'ObservaÃ§Ãµes', type:'textarea' }
   ]
 };
 
@@ -133,7 +133,7 @@ function parseKML(kmlText) {
   const doc = parser.parseFromString(kmlText, 'text/xml');
   const areas = [];
   doc.querySelectorAll('Placemark').forEach((pm) => {
-    const name = pm.querySelector('name')?.textContent?.trim() || 'Área sem nome';
+    const name = pm.querySelector('name')?.textContent?.trim() || 'Ãrea sem nome';
     let coordsEl = pm.querySelector('Polygon outerBoundaryIs LinearRing coordinates')
       || pm.querySelector('LinearRing coordinates') || pm.querySelector('coordinates');
     if (!coordsEl) return;
@@ -254,7 +254,7 @@ async function renderMapaInterativo(container, token) {
 
   <div class="mi-shell">
     <div class="mi-toolbar">
-      <select id="mi-map-select"><option value="">— Selecione um mapa —</option></select>
+      <select id="mi-map-select"><option value="">â€” Selecione um mapa â€”</option></select>
       <button class="mi-btn mi-btn-primary" id="mi-btn-novo">+ Novo mapa</button>
       <button class="mi-btn mi-btn-outline" id="mi-btn-importar" style="display:none">IMPORTAR MAPA (.KML)</button>
       <input type="file" id="mi-kml-input" style="display:none" accept=".kml,.kmz"/>
@@ -267,7 +267,7 @@ async function renderMapaInterativo(container, token) {
           <div class="mi-map-empty" id="mi-map-empty">
             <svg viewBox="0 0 24 24"><path d="M3 6.5 9 4l6 2.5 6-2.5v13L15 19.5 9 17 3 19.5z"/><path d="M9 4v13"/><path d="M15 6.5v13"/></svg>
             <span>Selecione ou crie um mapa</span>
-            <small>Após criar, importe um arquivo .KML<br>para visualizar as áreas da fazenda</small>
+            <small>ApÃ³s criar, importe um arquivo .KML<br>para visualizar as Ã¡reas da fazenda</small>
           </div>
         </div>
         <div class="mi-legend" id="mi-legend" style="display:none">
@@ -279,7 +279,7 @@ async function renderMapaInterativo(container, token) {
       <div class="mi-side">
         <div class="mi-side-header">Area Selecionada</div>
         <div class="mi-side-body" id="mi-side-body">
-          <div class="mi-side-empty">Clique em uma área do mapa para ver as informações cadastradas.</div>
+          <div class="mi-side-empty">Clique em uma Ã¡rea do mapa para ver as informaÃ§Ãµes cadastradas.</div>
         </div>
       </div>
     </div>
@@ -289,7 +289,7 @@ async function renderMapaInterativo(container, token) {
     <div class="mi-modal">
       <div class="mi-modal-header">
         <h2 id="mi-modal-title">Inserir Dados da Area</h2>
-        <button class="mi-modal-close" id="mi-modal-close">✕</button>
+        <button class="mi-modal-close" id="mi-modal-close">âœ•</button>
       </div>
       <div class="mi-modal-tabs">
         <button class="mi-modal-tab active" data-cat="gado">Gado</button>
@@ -317,7 +317,7 @@ async function renderMapaInterativo(container, token) {
   async function loadMaps() {
     try {
       S.maps = await apiMap('/farm-maps');
-      sel.innerHTML = '<option value="">— Selecione um mapa —</option>' +
+      sel.innerHTML = '<option value="">â€” Selecione um mapa â€”</option>' +
         S.maps.map((m) => `<option value="${m.id}">${esc(m.name)}</option>`).join('');
       if (S.currentMapId) sel.value = S.currentMapId;
     } catch (_) {}
@@ -359,7 +359,7 @@ async function renderMapaInterativo(container, token) {
       $('mi-map-inner').innerHTML = `<div class="mi-map-empty">
         <svg viewBox="0 0 24 24"><path d="M3 6.5 9 4l6 2.5 6-2.5v13L15 19.5 9 17 3 19.5z"/><path d="M9 4v13"/><path d="M15 6.5v13"/></svg>
         <span>Mapa criado com sucesso!</span>
-        <small>Clique em <strong>IMPORTAR MAPA (.KML)</strong><br>para visualizar as áreas</small>
+        <small>Clique em <strong>IMPORTAR MAPA (.KML)</strong><br>para visualizar as Ã¡reas</small>
       </div>`;
       $('mi-legend').style.display = 'none';
     }
@@ -394,11 +394,11 @@ async function renderMapaInterativo(container, token) {
     S.selectedAreaId = saved ? saved.id : null;
 
     // Buscar contagem real de animais (Alt 14)
-    let animalCount = null;
+    let livestockSummary = null;
     if (S.selectedAreaId) {
       try {
-        const r = await apiMap(`/map-areas/${S.selectedAreaId}/animal-count`);
-        if (r && typeof r.count === 'number') animalCount = r.count;
+        const r = await apiMap(`/map-areas/${S.selectedAreaId}/livestock-summary`);
+        if (r && typeof r.count === 'number') livestockSummary = r;
       } catch (_) {}
     }
 
@@ -415,7 +415,7 @@ async function renderMapaInterativo(container, token) {
       } catch (_) { S.areaDataCache[S.selectedAreaId] = {}; }
     }
 
-    await renderSidePanel(name, saved, animalCount);
+    await renderSidePanel(name, saved, livestockSummary);
   }
 
   async function saveAreaTypeColor(areaId, areaType, color, paddockId) {
@@ -462,15 +462,17 @@ async function renderMapaInterativo(container, token) {
     } catch (_) {}
   }
 
-  async function renderSidePanel(name, saved, animalCount) {
+  async function renderSidePanel(name, saved, livestockSummary) {
     const body = $('mi-side-body');
     const areaType = (saved && saved.area_type) ? saved.area_type : 'pasto';
     const currentColor = (saved && saved.color) ? saved.color : (AREA_COLORS[areaType] || AREA_COLORS.pasto);
     const data = S.areaDataCache[S.selectedAreaId] || {};
     const currentPaddockId = (saved && saved.paddock_id) ? String(saved.paddock_id) : '';
+    const animalCount = (livestockSummary && typeof livestockSummary.count === 'number') ? livestockSummary.count : null;
+    const linkedLots = Array.isArray(livestockSummary?.lots) ? livestockSummary.lots : [];
 
     // Carrega lista de pastos para o seletor
-    let paddockOptions = '<option value="">— Nenhum —</option>';
+    let paddockOptions = '<option value="">â€” Nenhum â€”</option>';
     try {
       const paddocks = await apiMap('/paddocks-list');
       if (Array.isArray(paddocks)) {
@@ -484,7 +486,7 @@ async function renderMapaInterativo(container, token) {
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;background:#f4faf6;border-radius:10px;padding:10px">
         <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end">
           <div>
-            <label style="font-size:10px;font-weight:700;color:#5f7a69;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px">Tipo de Área</label>
+            <label style="font-size:10px;font-weight:700;color:#5f7a69;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px">Tipo de Ãrea</label>
             <select id="mi-area-type-sel" style="width:100%;padding:7px 10px;border:1px solid #d6e8db;border-radius:8px;font-size:13px;color:#0f5132;background:#fff">
               ${Object.entries(AREA_TYPE_LABELS).map(([k,v]) => `<option value="${k}" ${k===areaType?'selected':''}>${v}</option>`).join('')}
             </select>
@@ -507,8 +509,9 @@ async function renderMapaInterativo(container, token) {
       const catData = data[catKey] || {};
       const fields = FIELD_DEFS[catKey] || [];
       const hasAny = fields.some((f) => {
+        if (catData[f.key] && catData[f.key].value) return true;
         if (catKey === 'gado' && f.key === 'qtd_animais' && animalCount !== null && animalCount > 0) return true;
-        return catData[f.key] && catData[f.key].value;
+        return false;
       });
 
       html += `<div class="mi-cat-block"><div class="mi-cat-title">${catLabel}</div>`;
@@ -518,12 +521,16 @@ async function renderMapaInterativo(container, token) {
         html += `<div class="mi-fields-grid">`;
         fields.filter((f) => f.type !== 'textarea').forEach((f) => {
           let val = (catData[f.key] && catData[f.key].value) ? catData[f.key].value : '';
-          // Usa contagem real se for > 0; senao mantém valor salvo manualmente
-          if (catKey === 'gado' && f.key === 'qtd_animais' && animalCount !== null && animalCount > 0) val = String(animalCount);
+          if (catKey === 'gado' && f.key === 'raca_predominante' && !val && livestockSummary?.predominant_breed) val = livestockSummary.predominant_breed;
+          if (catKey === 'gado' && f.key === 'categoria' && !val && livestockSummary?.categories) val = livestockSummary.categories;
+          if (catKey === 'gado' && f.key === 'qtd_animais' && animalCount !== null) val = String(animalCount);
           if (!val) return;
           const unit = f.unit ? ` ${f.unit}` : '';
           html += `<div class="mi-field"><span class="mi-field-label">${esc(f.label)}</span><span class="mi-field-value">${esc(val)}${unit}</span></div>`;
         });
+        if (catKey === 'gado' && linkedLots.length) {
+          html += `<div class="mi-field" style="grid-column:1/-1"><span class="mi-field-label">Lotes vinculados</span><span class="mi-field-value">${esc(linkedLots.map((lot) => `${lot.name} (${lot.quantity})`).join(', '))}</span></div>`;
+        }
         html += `</div>`;
         fields.filter((f) => f.type === 'textarea').forEach((f) => {
           const val = (catData[f.key] && catData[f.key].value) ? catData[f.key].value : '';
@@ -554,12 +561,12 @@ async function renderMapaInterativo(container, token) {
         await mapaAlert('Tipo, cor e pasto salvos!');
         // Re-render side panel
         const updatedSaved = S.savedAreas.find((a) => a.id === S.selectedAreaId);
-        let animalCnt = null;
+        let livestockSummary = null;
         try {
-          const r = await apiMap(`/map-areas/${S.selectedAreaId}/animal-count`);
-          if (r && typeof r.count === 'number') animalCnt = r.count;
+          const r = await apiMap(`/map-areas/${S.selectedAreaId}/livestock-summary`);
+          if (r && typeof r.count === 'number') livestockSummary = r;
         } catch (_) {}
-        await renderSidePanel(name, updatedSaved, animalCnt);
+        await renderSidePanel(name, updatedSaved, livestockSummary);
       };
     }
 
@@ -575,14 +582,14 @@ async function renderMapaInterativo(container, token) {
   }
 
   function clearSidePanel() {
-    $('mi-side-body').innerHTML = '<div class="mi-side-empty">Clique em uma área do mapa para ver as informações cadastradas.</div>';
+    $('mi-side-body').innerHTML = '<div class="mi-side-empty">Clique em uma Ã¡rea do mapa para ver as informaÃ§Ãµes cadastradas.</div>';
     S.selectedAreaKey = null;
     S.selectedAreaId  = null;
   }
 
   async function openDataModal() {
-    if (!S.selectedAreaId) { mapaAlert('Clique em uma área do mapa primeiro.'); return; }
-    $('mi-modal-title').textContent = S.hasData ? 'Alterar Dados da Área' : 'Inserir Dados da Área';
+    if (!S.selectedAreaId) { mapaAlert('Clique em uma Ã¡rea do mapa primeiro.'); return; }
+    $('mi-modal-title').textContent = S.hasData ? 'Alterar Dados da Ãrea' : 'Inserir Dados da Ãrea';
     $('mi-modal-dados').classList.add('open');
     S.activeCat = 'gado';
     document.querySelectorAll('.mi-modal-tab').forEach((t) => t.classList.toggle('active', t.dataset.cat === 'gado'));
@@ -646,7 +653,7 @@ async function renderMapaInterativo(container, token) {
       [nonTA[i], nonTA[i+1]].filter(Boolean).forEach((f) => {
         let val = (cached[f.key] && cached[f.key].value) ? cached[f.key].value : '';
         // Pre-preenche qtd_animais com contagem real se for > 0 (tem prioridade sobre valor salvo)
-        if (cat === 'gado' && f.key === 'qtd_animais' && liveAnimalCount !== null && liveAnimalCount > 0) {
+        if (cat === 'gado' && f.key === 'qtd_animais' && liveAnimalCount !== null) {
           val = String(liveAnimalCount);
         }
         const labelTxt = f.label + (f.unit ? ` (${f.unit})` : '');
@@ -720,17 +727,17 @@ async function renderMapaInterativo(container, token) {
       } catch (_) { S.areaDataCache[S.selectedAreaId] = {}; }
 
       const saved = S.savedAreas.find((a) => a.id === S.selectedAreaId);
-      let animalCount = null;
+      let livestockSummary = null;
       try {
-        const r = await apiMap(`/map-areas/${S.selectedAreaId}/animal-count`);
-        if (r && typeof r.count === 'number') animalCount = r.count;
+        const r = await apiMap(`/map-areas/${S.selectedAreaId}/livestock-summary`);
+        if (r && typeof r.count === 'number') livestockSummary = r;
       } catch (_) {}
-      if (saved) await renderSidePanel(saved.name, saved, animalCount);
+      if (saved) await renderSidePanel(saved.name, saved, livestockSummary);
     }
   }
 
   async function confirmCancelModal() {
-    const ok = await mapaConfirm('DESEJA MESMO CANCELAR A OPERAÇÃO?<br>TODOS OS DADOS NÃO SALVOS SERÃO PERDIDOS.');
+    const ok = await mapaConfirm('DESEJA MESMO CANCELAR A OPERAÃ‡ÃƒO?<br>TODOS OS DADOS NÃƒO SALVOS SERÃƒO PERDIDOS.');
     if (ok) $('mi-modal-dados').classList.remove('open');
   }
 
@@ -757,7 +764,7 @@ async function renderMapaInterativo(container, token) {
   });
 
   $('mi-btn-novo').onclick = async () => {
-    const name = await mapaPrompt('Nome do novo mapa:', 'Ex: Fazenda Boa Esperança');
+    const name = await mapaPrompt('Nome do novo mapa:', 'Ex: Fazenda Boa EsperanÃ§a');
     if (!name) return;
     try {
       const m = await apiMap('/farm-maps', { method:'POST', body:JSON.stringify({ name:name.trim(), image_type:'kml' }) });
@@ -792,14 +799,14 @@ async function renderMapaInterativo(container, token) {
 
   $('mi-btn-excluir').onclick = async () => {
     if (!S.currentMapId) return;
-    const ok = await mapaConfirm('DESEJA REALMENTE EXCLUIR O MAPA E TODOS SEUS DADOS?<br>TODAS AS INFORMAÇÕES SERÃO PERDIDAS.');
+    const ok = await mapaConfirm('DESEJA REALMENTE EXCLUIR O MAPA E TODOS SEUS DADOS?<br>TODAS AS INFORMAÃ‡Ã•ES SERÃƒO PERDIDAS.');
     if (!ok) return;
     try {
       await apiMap(`/farm-maps/${S.currentMapId}`, { method:'DELETE' });
       S.currentMapId = null; S.currentMap = null; S.kmlAreas = []; S.savedAreas = []; S.hasData = false;
       $('mi-map-inner').innerHTML = `<div class="mi-map-empty">
         <svg viewBox="0 0 24 24"><path d="M3 6.5 9 4l6 2.5 6-2.5v13L15 19.5 9 17 3 19.5z"/><path d="M9 4v13"/><path d="M15 6.5v13"/></svg>
-        <span>Mapa excluído.</span><small>Crie um novo mapa para começar</small>
+        <span>Mapa excluÃ­do.</span><small>Crie um novo mapa para comeÃ§ar</small>
       </div>`;
       $('mi-legend').style.display = 'none';
       clearSidePanel();
@@ -816,7 +823,7 @@ async function renderMapaInterativo(container, token) {
       $('mi-map-inner').innerHTML = `<div class="mi-map-empty">
         <svg viewBox="0 0 24 24"><path d="M3 6.5 9 4l6 2.5 6-2.5v13L15 19.5 9 17 3 19.5z"/><path d="M9 4v13"/><path d="M15 6.5v13"/></svg>
         <span>Selecione ou crie um mapa</span>
-        <small>Após criar, importe um arquivo .KML<br>para visualizar as áreas da fazenda</small>
+        <small>ApÃ³s criar, importe um arquivo .KML<br>para visualizar as Ã¡reas da fazenda</small>
       </div>`;
       $('mi-legend').style.display = 'none';
       clearSidePanel();
@@ -835,8 +842,8 @@ async function renderMapaInterativo(container, token) {
   window.syncMapAnimalCount = async () => {
     if (!S.selectedAreaId || !S.selectedAreaKey) return;
     try {
-      const r = await apiMap(`/map-areas/${S.selectedAreaId}/animal-count`);
-      const animalCnt = (r && typeof r.count === 'number') ? r.count : null;
+      const r = await apiMap(`/map-areas/${S.selectedAreaId}/livestock-summary`);
+      const livestockSummary = (r && typeof r.count === 'number') ? r : null;
       const saved = S.savedAreas.find((a) => a.id === S.selectedAreaId);
       if (saved) {
         const savedName = saved.name || S.selectedAreaKey;
@@ -846,10 +853,11 @@ async function renderMapaInterativo(container, token) {
         const grouped = {};
         (raw || []).forEach((d) => { if (!grouped[d.category]) grouped[d.category] = {}; grouped[d.category][d.field_key] = d; });
         S.areaDataCache[S.selectedAreaId] = grouped;
-        await renderSidePanel(savedName, saved, animalCnt);
+        await renderSidePanel(savedName, saved, livestockSummary);
       }
     } catch (_) {}
   };
 }
 
 window.renderMapaInterativo = renderMapaInterativo;
+

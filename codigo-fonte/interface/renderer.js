@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:4312/api';
+﻿const API_BASE = `${window.location.origin}/api`;
 const PAGE_SIZE = 8;
 const urlParams = new URLSearchParams(window.location.search);
 let currentGroup = 'home';
@@ -14,7 +14,7 @@ const ACCESS_GROUPS = [
 
 const GROUPS = {
   home: { title: 'Painel', modules: ['home_dashboard'] },
-  farm: { title: 'Fazenda', modules: ['plots', 'paddocks'] },
+  farm: { title: 'Fazenda', modules: ['farm_livestock', 'plots', 'paddocks'] },
   livestock: { title: 'Pecuária', modules: ['animals', 'lots', 'animal_events', 'sales'] },
   stock: { title: 'Estoque', modules: ['inventory_items', 'inventory_moves', 'purchases'] },
   agriculture: { title: 'Agricultura', modules: ['crop_operations'] },
@@ -31,13 +31,14 @@ const SHORTCUTS = [
   { key: 'stock', title: 'Estoque', subtitle: 'Itens, movimentações e compras', iconKey: 'stock' },
   { key: 'agriculture', title: 'Agricultura', subtitle: 'Plantio, qualidade da área e lavoura', iconKey: 'agriculture' },
   { key: 'finance', title: 'Financeiro', subtitle: 'Lançamentos e contas', iconKey: 'finance' },
-  { key: 'map', title: 'Mapas', subtitle: 'Visualizações integrada dos mapas', iconKey: 'map' },
+  { key: 'map', title: 'Mapas', subtitle: 'Visualizações integradas dos mapas', iconKey: 'map' },
   { key: 'reports', title: 'Relatórios', subtitle: 'Indicadores separados por área', iconKey: 'reports' }
 ];
 
 const MODULES = [
   { key: 'home_dashboard', title: 'Atalhos principais', subtitle: 'áreas estratégicas do sistema', view: 'home', group: 'home' },
   { key: 'farm_overview', title: 'Visão geral da Fazenda', subtitle: 'Resumo visual da propriedade', view: 'map', mapType: 'farm', group: 'farm' },
+  { key: 'farm_livestock', title: 'Geral', subtitle: 'Resumo geral da fazenda com foco na pecuária', view: 'map', mapType: 'farm_livestock', group: 'farm' },
   { key: 'plots', title: 'Talhões', subtitle: 'áreas agrícolas da fazenda', view: 'crud', module: 'cadastro', group: 'farm' },
   { key: 'paddocks', title: 'Pastos', subtitle: 'Manejo e situação das pastagens', view: 'crud', module: 'cadastro', group: 'farm' },
   { key: 'livestock_map', title: 'Qualidade da Pecuária', subtitle: 'Mapa e legenda da criação', view: 'map', mapType: 'livestock', group: 'livestock' },
@@ -54,7 +55,7 @@ const MODULES = [
   { key: 'payables', title: 'Contas a pagar', subtitle: 'Obrigações e vencimentos', view: 'crud', module: 'financeiro', group: 'finance' },
   { key: 'receivables', title: 'Contas a receber', subtitle: 'Recebimentos e clientes', view: 'crud', module: 'financeiro', group: 'finance' },
   { key: 'map_hub', title: 'Mapa', subtitle: 'Escolha o mapa desejado', view: 'maphub', group: 'map' },
-  { key: 'mapa_interativo', title: 'Mapa Interativo', subtitle: 'Importe seu mapa do Google Earth e gerencie cada area', view: 'mapa_interativo', group: 'map' },
+  { key: 'mapa_interativo', title: 'Mapa Interativo', subtitle: 'Importe seu mapa do Google Earth e gerencie cada área', view: 'mapa_interativo', group: 'map' },
   { key: 'reports', title: 'Relatórios', subtitle: 'Categorias por área', view: 'reports', module: 'relatorios', group: 'reports' },
   { key: 'system_parameters', title: 'Parâmetros do Sistema', subtitle: 'Ative ou desative módulos do cliente', view: 'settings', module: 'cadastro', group: 'settings' },
   { key: 'users', title: 'Usuários', subtitle: 'Controle de acesso e permissões', view: 'crud', module: 'cadastro', group: 'settings' },
@@ -69,13 +70,14 @@ const LABELS = {
   grass_type: 'Tipo de capim', role_name: 'Função', contact: 'Contato', status: 'Status',
   purpose: 'Finalidade', notes: 'Observações', lot_id: 'Lote', paddock_id: 'Pasto Atual', paddock_future_id: 'Pasto Futuro (movimentação)', ear_tag: 'Brinco', species: 'Espécie',
   sex: 'Sexo', breed: 'Raça', birth_date: 'Nascimento', category: 'Categoria', animal_id: 'Animal',
+  entry_mode: 'Tipo de lançamento', ear_tag_prefix: 'Prefixo do brinco',
   event_type: 'Evento', event_date: 'Data', weight: 'Peso', vaccine: 'Vacina', cost: 'Custo', plot_id: 'Talhão', employee_id: 'Responsável',
   operation_type: 'Operação', operation_date: 'Data', inputs_used: 'Insumos usados', item_id: 'Item', unit: 'Unidade',
   minimum_stock: 'Estoque mínimo', current_stock: 'Estoque atual', move_type: 'Movimento', move_date: 'Data', quantity: 'Quantidade',
   origin_destiny: 'Origem/Destino', unit_cost: 'Custo unitário', entry_type: 'Tipo', competence_date: 'Competência', payment_date: 'Pagamento',
   amount: 'Valor', payment_method: 'Forma de pagamento', cost_center: 'Centro de custo', supplier: 'Fornecedor', due_date: 'Vencimento',
   customer_name: 'Cliente', receive_date: 'Recebimento', purchase_date: 'Data da compra', unit_price: 'Valor unitário', taxes: 'Impostos',
-  sale_date: 'Data da venda', sale_type: 'Tipo de venda', actions: 'Ações'
+  sale_date: 'Data da venda', sale_type: 'Tipo de venda', sale_scope: 'Lançamento', actions: 'Ações'
 };
 
 const FORMS = {
@@ -122,10 +124,13 @@ const FORMS = {
     { name: 'notes', label: 'Observações', type: 'textarea' }
   ],
   animals: [
+    { name: 'entry_mode', label: 'Tipo de lançamento', type: 'select', options: [{ value: 'unidade', label: 'Por unidade' }, { value: 'lote', label: 'Por lote' }], defaultValue: 'unidade' },
     { name: 'farm_id', label: 'Fazenda', type: 'lookup', source: 'farms' },
     { name: 'lot_id', label: 'Lote', type: 'lookup', source: 'lots' },
     { name: 'paddock_id', label: 'Pasto', type: 'lookup', source: 'paddocks' },
     { name: 'ear_tag', label: 'Brinco', required: true },
+    { name: 'ear_tag_prefix', label: 'Prefixo do brinco' },
+    { name: 'quantity', label: 'Quantidade', type: 'number', defaultValue: 1 },
     { name: 'species', label: 'Espécie', defaultValue: 'bovino' },
     { name: 'sex', label: 'Sexo', type: 'select', options: ['M', 'F'] },
     { name: 'breed', label: 'Raça' },
@@ -211,7 +216,9 @@ const FORMS = {
     { name: 'customer_name', label: 'Cliente', required: true },
     { name: 'sale_date', label: 'Data da venda', type: 'date', required: true },
     { name: 'sale_type', label: 'Tipo de venda', type: 'select', options: [{ value: 'animal', label: 'Animal' }, { value: 'produto', label: 'Produto' }] },
+    { name: 'sale_scope', label: 'Tipo de lançamento', type: 'select', options: [{ value: 'unidade', label: 'Por unidade' }, { value: 'lote', label: 'Por lote' }], defaultValue: 'unidade' },
     { name: 'animal_id', label: 'Animal', type: 'lookup', source: 'animals' },
+    { name: 'lot_id', label: 'Lote', type: 'lookup', source: 'lots' },
     { name: 'item_id', label: 'Item', type: 'lookup', source: 'inventory_items' },
     { name: 'quantity', label: 'Quantidade', type: 'number' },
     { name: 'unit_price', label: 'Valor unitário', type: 'number', required: true },
@@ -236,7 +243,7 @@ const COLUMNS = {
   payables: ['supplier', 'due_date', 'amount', 'status'],
   receivables: ['customer_name', 'due_date', 'amount', 'status'],
   purchases: ['supplier', 'purchase_date', 'item_id', 'quantity', 'unit_price', 'status'],
-  sales: ['customer_name', 'sale_date', 'sale_type', 'animal_id', 'unit_price', 'status']
+  sales: ['customer_name', 'sale_date', 'sale_type', 'sale_scope', 'animal_id', 'lot_id', 'quantity', 'unit_price', 'status']
 };
 
 const SPECIAL_ENDPOINTS = { purchases: '/purchases/register', sales: '/sales/register', inventory_moves: '/inventory_moves/register' };
@@ -281,12 +288,15 @@ const el = {
   navList: document.getElementById('nav-list'),
   dashboardCards: document.getElementById('dashboard-cards'),
   homeSection: document.getElementById('home-section'),
+  homeAlerts: document.getElementById('home-alerts'),
+  homeHero: document.getElementById('home-hero'),
   crudSection: document.getElementById('crud-section'),
   reportsSection: document.getElementById('reports-section'),
   settingsSection: document.getElementById('settings-section'),
   mapSection: document.getElementById('map-section'),
   pageTitle: document.getElementById('page-title'),
   pageSubtitle: document.getElementById('page-subtitle'),
+  crudHighlight: document.getElementById('crud-highlight'),
   mapTitle: document.getElementById('map-title'),
   mapSubtitle: document.getElementById('map-subtitle'),
   mapContent: document.getElementById('map-content'),
@@ -342,6 +352,17 @@ function fmt(value) {
   if (Array.isArray(value)) return value.map((k) => ACCESS_GROUPS.find((g) => g.key === k)?.label || k).join(', ');
   if (typeof value === 'number') return value.toLocaleString('pt-BR');
   return String(value);
+}
+function dateValue(value) {
+  if (!value) return 0;
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+function formatShortDate(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleDateString('pt-BR');
 }
 function currentModuleConfig() { return MODULES.find((m) => m.key === state.currentModule) || MODULES[0]; }
 function groupEnabled(group) {
@@ -619,7 +640,7 @@ function shortcutIcon(key) {
   const icons = {
     home: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 10.5V21h13V10.5"/><path d="M10 21v-6h4v6"/></svg>`,
     farm: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V9.5L12 4l8 5.5V20"/><path d="M8 20v-4.5h3V20"/><path d="M13.5 11.5h2.5"/><path d="M13.5 14.5h2.5"/></svg>`,
-    livestock: `<img src="../imagens/pecuaria_boi.png" class="tab-icon-img pecuaria-icon-img" alt="Pecuária">`,
+    livestock: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8.5 4.5 6 3 8.5l2.5 2"/><path d="M17 8.5 19.5 6 21 8.5l-2.5 2"/><path d="M8 9.5c0-2.2 1.8-4 4-4s4 1.8 4 4V14c0 2.8-1.8 5-4 5s-4-2.2-4-5Z"/><path d="M10 13h.01"/><path d="M14 13h.01"/><path d="M10 16c1 .8 3 .8 4 0"/><path d="M9 6.5 7.5 4"/><path d="M15 6.5 16.5 4"/></svg>`,
     stock: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h18"/><path d="M5 10V6l3-2h8l3 2v4"/><path d="M4 10v10h16V10"/><path d="M8 14h8"/><path d="M8 17h5"/></svg>`,
     agriculture: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V11"/><path d="M12 11c0-4 2.5-6 6-6 0 4-2.5 6-6 6Z"/><path d="M12 14c0-3.2-2-5-5-5 0 3.2 2 5 5 5Z"/></svg>`,
     finance: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M6 7V5h12v2"/><rect x="4" y="7" width="16" height="12" rx="2"/><path d="M8 13h8"/><path d="M8 16h5"/></svg>`,
@@ -677,9 +698,108 @@ function renderShortcutBar() {
   el.shortcutBar.querySelectorAll('[data-shortcut]').forEach((btn) => btn.onclick = () => openShortcut(btn.dataset.shortcut));
 }
 
-function renderShortcutGrid() {
-  if (!el.quickLinks) return;
-  el.quickLinks.innerHTML = '';
+function homeAlertTone(type, count) {
+  if (type === 'resultado') return count < 0 ? 'critical' : 'ok';
+  if (type === 'inmet') return count > 1 ? 'critical' : count > 0 ? 'warning' : 'ok';
+  return count > 0 ? 'warning' : 'ok';
+}
+
+function homeAlertText(type, count) {
+  if (type === 'estoque') return count > 0 ? `${count} item(ns) com estoque em alerta` : 'Estoque sem alertas criticos';
+  if (type === 'payables') return count > 0 ? `${count > 1 ? 'Contas' : 'Conta'} em aberto exigem atencao` : 'Contas a pagar controladas';
+  if (type === 'inmet') return count > 0 ? `${count} alerta(s) climaticos ativos` : 'Sem alertas climaticos relevantes';
+  return count < 0 ? 'Resultado do periodo esta negativo' : 'Resultado do periodo esta saudavel';
+}
+
+function renderShortcutGrid(summary = {}, inmetReport = null) {
+  if (!el.quickLinks || !el.homeAlerts || !el.homeHero) return;
+
+  const lowStock = Number(summary.lowStockItems || 0);
+  const openPayables = Number(summary.openPayables || 0);
+  const result = Number(summary.totalRevenue || 0) - Number(summary.totalExpense || 0);
+  const inmetAlerts = (inmetReport?.alerts || []).filter((a) => a.severity !== 'info').length;
+  const totalArea = (state.lookups?.plots || []).reduce((sum, plot) => sum + Number(plot.area || 0), 0);
+  const activeAnimals = Number(summary.animals || 0);
+  const currentDate = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  const alerts = [
+    { type: 'estoque', icon: 'Estoque', text: homeAlertText('estoque', lowStock), action: 'Ver estoque', onclick: "openShortcut('stock')" },
+    { type: 'payables', icon: 'Financeiro', text: homeAlertText('payables', openPayables), action: 'Abrir financeiro', onclick: 'window._goFinance && window._goFinance()' },
+    { type: 'inmet', icon: 'Clima', text: homeAlertText('inmet', inmetAlerts), action: 'Ver relatorios', onclick: "openShortcut('reports')" },
+    { type: 'resultado', icon: 'Resultado', text: homeAlertText('resultado', result), action: 'Ver painel', onclick: "openShortcut('home')" }
+  ];
+
+  el.homeAlerts.innerHTML = alerts.map((item) => `
+    <button class="home-alert-chip ${homeAlertTone(item.type, item.type === 'resultado' ? result : item.type === 'inmet' ? inmetAlerts : item.type === 'payables' ? openPayables : lowStock)}" type="button" onclick="${item.onclick}">
+      <span class="home-alert-chip-label">${item.icon}</span>
+      <span class="home-alert-chip-text">${item.text}</span>
+      <span class="home-alert-chip-action">${item.action}</span>
+    </button>`).join('');
+
+  el.homeHero.innerHTML = `
+    <article class="hero-card modern-hero home-overview-card">
+      <div class="home-overview-main">
+        <div class="home-overview-kicker">Painel da Fazenda</div>
+        <h1>Visao geral da operacao para agir rapido no que importa hoje.</h1>
+        <p>Resumo consolidado de financeiro, rebanho, area cultivada e clima para orientar as proximas decisoes da rotina.</p>
+        <div class="home-overview-meta">
+          <span class="home-overview-meta-pill">Atualizado em ${escapeHtml(currentDate)}</span>
+          <span class="home-overview-meta-pill">${escapeHtml(state.inmetCity)}/${escapeHtml(state.inmetUf)}</span>
+        </div>
+      </div>
+      <div class="home-overview-side">
+        <div class="home-overview-result ${result >= 0 ? 'positive' : 'negative'}">
+          <div class="home-overview-result-label">Resultado do periodo</div>
+          <div class="home-overview-result-value">${money(result)}</div>
+          <div class="home-overview-result-sub">${result >= 0 ? 'operacao em equilibrio' : 'despesas acima das receitas'}</div>
+        </div>
+        <div class="home-overview-stats">
+          <div class="home-overview-stat">
+            <span class="home-overview-stat-value">${activeAnimals}</span>
+            <span class="home-overview-stat-label">Animais ativos</span>
+          </div>
+          <div class="home-overview-stat">
+            <span class="home-overview-stat-value">${totalArea > 0 ? `${totalArea.toLocaleString('pt-BR')} ha` : '-'}</span>
+            <span class="home-overview-stat-label">Area cultivada</span>
+          </div>
+          <div class="home-overview-stat">
+            <span class="home-overview-stat-value">${lowStock}</span>
+            <span class="home-overview-stat-label">Alertas de estoque</span>
+          </div>
+        </div>
+      </div>
+    </article>`;
+
+  const actionCards = [
+    {
+      title: 'Financeiro',
+      desc: openPayables > 0 ? `${money(openPayables)} ainda exigem pagamento.` : 'Contas controladas e prontas para acompanhamento.',
+      meta: result >= 0 ? 'Resultado positivo' : 'Resultado pressionado',
+      onclick: 'window._goFinance && window._goFinance()'
+    },
+    {
+      title: 'Operacao Rural',
+      desc: `${activeAnimals} animais ativos e ${totalArea > 0 ? `${totalArea.toLocaleString('pt-BR')} ha` : 'nenhuma area cadastrada'} monitorados.`,
+      meta: 'Pecuaria e agricultura',
+      onclick: "openShortcut('farm')"
+    },
+    {
+      title: 'Clima e Alertas',
+      desc: inmetAlerts > 0 ? `${inmetAlerts} alerta(s) climaticos pedem atencao.` : 'Sem alertas climaticos relevantes no momento.',
+      meta: `${escapeHtml(state.inmetCity)}/${escapeHtml(state.inmetUf)}`,
+      onclick: "openShortcut('reports')"
+    }
+  ];
+
+  el.quickLinks.innerHTML = actionCards.map((item) => `
+    <button class="quick-link-card home-action-card" type="button" onclick="${item.onclick}">
+      <div class="home-action-top">
+        <strong>${item.title}</strong>
+        <span class="home-action-meta">${item.meta}</span>
+      </div>
+      <span>${item.desc}</span>
+      <span class="home-action-cta">Abrir area</span>
+    </button>`).join('');
 }
 
 async function openShortcut(group) {
@@ -744,16 +864,25 @@ function renderNav() {
   el.navList.querySelectorAll('[data-module]').forEach((btn) => btn.onclick = () => switchModule(btn.dataset.module));
 }
 
+function renderCrudHighlight(module) {
+  if (!el.crudHighlight) return;
+  el.crudHighlight.innerHTML = '';
+  el.crudHighlight.className = '';
+}
+
 function switchView(view) {
-  [el.homeSection, el.crudSection, el.reportsSection, el.settingsSection, el.mapSection].forEach((section) => section.classList.remove('active'));
+  [el.homeSection, el.crudSection, el.reportsSection, el.settingsSection, el.mapSection].forEach((section) => {
+    section.classList.remove('active');
+    section.style.display = 'none';
+  });
   // Mostrar/esconder o root dedicado do mapa interativo
   if (el.mapaRoot) el.mapaRoot.style.display = 'none';
   if (el.mainContent) el.mainContent.style.display = '';
-  if (view === 'home') el.homeSection.classList.add('active');
-  if (view === 'crud') el.crudSection.classList.add('active');
-  if (view === 'reports') el.reportsSection.classList.add('active');
-  if (view === 'settings') el.settingsSection.classList.add('active');
-  if (view === 'map') el.mapSection.classList.add('active');
+  if (view === 'home') { el.homeSection.classList.add('active'); el.homeSection.style.display = ''; }
+  if (view === 'crud') { el.crudSection.classList.add('active'); el.crudSection.style.display = ''; }
+  if (view === 'reports') { el.reportsSection.classList.add('active'); el.reportsSection.style.display = ''; }
+  if (view === 'settings') { el.settingsSection.classList.add('active'); el.settingsSection.style.display = ''; }
+  if (view === 'map') { el.mapSection.classList.add('active'); el.mapSection.style.display = 'flex'; }
   if (view === 'mapa_interativo') {
     if (el.mainContent) el.mainContent.style.display = 'none';
     if (el.mapaRoot) el.mapaRoot.style.display = 'flex';
@@ -764,6 +893,14 @@ function mapState(key, fallback = 'moderado') {
 }
 function renderMapModule(type, selectedMetric) {
   if (type === 'farm') {
+    const farms = state.lookups?.farms || [];
+    const plots = state.lookups?.plots || [];
+    const paddocks = state.lookups?.paddocks || [];
+    const employees = state.lookups?.employees || [];
+    const primaryFarm = farms[0] || {};
+    const totalPlotArea = plots.reduce((sum, plot) => sum + Number(plot.area || 0), 0);
+    const totalPaddockArea = paddocks.reduce((sum, paddock) => sum + Number(paddock.area || 0), 0);
+    const activePaddocks = paddocks.filter((item) => String(item.status || '').toLowerCase() === 'ativo').length;
     const metrics = {
       pasture: mapState('livestock_pasture', 'bom'),
       water: mapState('livestock_water', 'moderado'),
@@ -780,15 +917,188 @@ function renderMapModule(type, selectedMetric) {
       farm_pasture: { norte:metrics.pasture, centro:'moderado', oeste:metrics.pasture, lavouraA:'moderado', lavouraB:'moderado', reserva:'bom', agua:metrics.water, leste:'ruim', nordeste:'moderado' },
       farm_soil: { norte:metrics.soil, centro:'moderado', oeste:metrics.soil, lavouraA:metrics.soil, lavouraB:metrics.soil, reserva:'bom', agua:'moderado', leste:'ruim', nordeste:metrics.soil }
     };
+    const farmSummary = `
+      <div class="farm-overview-grid">
+        <div class="farm-overview-card">
+          <div class="farm-overview-label">Fazenda principal</div>
+          <div class="farm-overview-value">${escapeHtml(primaryFarm.name || 'Nao cadastrada')}</div>
+          <div class="farm-overview-meta">${escapeHtml(primaryFarm.location || 'Defina a localizacao da propriedade')}</div>
+        </div>
+        <div class="farm-overview-card">
+          <div class="farm-overview-label">Talhoes</div>
+          <div class="farm-overview-value">${plots.length}</div>
+          <div class="farm-overview-meta">${totalPlotArea ? `${Number(totalPlotArea).toLocaleString('pt-BR')} ha cadastrados` : 'Cadastre as areas agricolas'}</div>
+        </div>
+        <div class="farm-overview-card">
+          <div class="farm-overview-label">Pastos</div>
+          <div class="farm-overview-value">${paddocks.length}</div>
+          <div class="farm-overview-meta">${activePaddocks} ativo(s) · ${totalPaddockArea ? `${Number(totalPaddockArea).toLocaleString('pt-BR')} ha` : 'sem area definida'}</div>
+        </div>
+        <div class="farm-overview-card">
+          <div class="farm-overview-label">Equipe</div>
+          <div class="farm-overview-value">${employees.length}</div>
+          <div class="farm-overview-meta">${employees.length ? 'Pessoas vinculadas à operação' : 'Nenhum funcionário cadastrado'}</div>
+        </div>
+      </div>
+      <div class="farm-quick-actions">
+        <button class="ghost small" type="button" data-farm-open="plots">Abrir talhões</button>
+        <button class="ghost small" type="button" data-farm-open="paddocks">Abrir pastos</button>
+        <button class="ghost small" type="button" data-farm-open="farms">Editar fazenda base</button>
+      </div>`;
     const labels = { norte:'Pasto Norte', centro:'Centro', oeste:'Pasto Oeste', lavouraA:'Talhão A', lavouraB:'Talhão B', reserva:'Reserva', agua:'Represa', leste:'Corredor', nordeste:'Norte Leste' };
     el.mapTitle.textContent = 'Fazenda';
     el.mapSubtitle.textContent = 'Mapa técnico da propriedade';
     el.mapContent.innerHTML = `<div class="legend-panel"><div class="panel-title">Legenda e ajustes</div><div class="muted-card">Selecione um indicador e ajuste os níveis conforme a realidade da propriedade.</div>${metricBlock('Qualidade do pasto', 'Condição geral das pastagens da fazenda.', metrics.pasture, 'livestock_pasture')}${metricBlock('Nível de Água', 'Disponibilidade hídrica dos setores e pastos.', metrics.water, 'livestock_water')}${metricBlock('Qualidade do solo', 'Condição geral do solo da propriedade.', metrics.soil, 'agri_soil')}${mapMetricPanel(options, metric)}</div><div class="map-panel"><div class="panel-title">Mapa geral · ${options.find(o=>o.key===metric).label}</div><div class="map-frame">${buildMapSvg(valuesByMetric[metric], {}, labels, type)}</div></div>`;
+    el.mapContent.innerHTML = `<div class="legend-panel"><div class="panel-title">Visão geral da propriedade</div><div class="muted-card">Acompanhe a estrutura principal da fazenda e ajuste os níveis conforme a realidade da propriedade.</div>${farmSummary}${metricBlock('Qualidade do pasto', 'Condição geral das pastagens da fazenda.', metrics.pasture, 'livestock_pasture')}${metricBlock('Nível de Água', 'Disponibilidade hídrica dos setores e pastos.', metrics.water, 'livestock_water')}${metricBlock('Qualidade do solo', 'Condição geral do solo da propriedade.', metrics.soil, 'agri_soil')}${mapMetricPanel(options, metric)}</div><div class="map-panel"><div class="panel-title">Mapa geral · ${options.find(o=>o.key===metric).label}</div><div class="map-frame">${buildMapSvg(valuesByMetric[metric], {}, labels, type)}</div></div>`;
     state.mapMetricSelection[type] = metric; storeMapMetricSelection();
     bindQualityControls(type); initMapInteractions(type);
+    document.querySelectorAll('[data-farm-open]').forEach((btn) => btn.onclick = async () => {
+      const target = btn.getAttribute('data-farm-open');
+      if (target === 'farms') return openSettingsAuth('farms');
+      state.currentModule = target;
+      renderNav();
+      await switchModule(target);
+    });
     return;
   }
 
+
+  if (type === 'farm_livestock') {
+    const farms = state.lookups?.farms || [];
+    const plots = state.lookups?.plots || [];
+    const animals = state.lookups?.animals || [];
+    const lots = state.lookups?.lots || [];
+    const paddocks = state.lookups?.paddocks || [];
+    const employees = state.lookups?.employees || [];
+    const events = state.lookups?.animal_events || [];
+    const sales = state.lookups?.sales || [];
+    const primaryFarm = farms[0] || {};
+    const totalFarmArea = Number(primaryFarm.total_area || 0);
+    const totalPlotArea = plots.reduce((sum, item) => sum + Number(item.area || 0), 0);
+    const totalPaddockArea = paddocks.reduce((sum, item) => sum + Number(item.area || 0), 0);
+    const activeAnimals = animals.filter((item) => String(item.status || '').toLowerCase() === 'ativo');
+    const occupiedPaddocks = new Set(activeAnimals.map((item) => item.paddock_id).filter(Boolean));
+    const activePaddocks = paddocks.filter((item) => String(item.status || '').toLowerCase() === 'ativo').length;
+    const lotsInUse = new Set(activeAnimals.map((item) => item.lot_id).filter(Boolean));
+    const femaleAnimals = activeAnimals.filter((item) => String(item.sex || '').toUpperCase() === 'F').length;
+    const maleAnimals = activeAnimals.filter((item) => String(item.sex || '').toUpperCase() === 'M').length;
+    const calves = activeAnimals.filter((item) => String(item.category || '').toLowerCase() === 'bezerro').length;
+    const animalsWithoutLot = activeAnimals.filter((item) => !item.lot_id).length;
+    const animalsWithoutPaddock = activeAnimals.filter((item) => !item.paddock_id).length;
+    const weighingEvents = events.filter((item) => String(item.event_type || '').toLowerCase() === 'pesagem' && Number(item.weight || 0) > 0);
+    const avgWeight = weighingEvents.length
+      ? Math.round(weighingEvents.reduce((sum, item) => sum + Number(item.weight || 0), 0) / weighingEvents.length)
+      : 0;
+    const sanitaryEvents = events.filter((item) => ['vacinação', 'vermifugação'].includes(String(item.event_type || '').toLowerCase()));
+    const lastEvent = [...events].sort((a, b) => dateValue(b.event_date) - dateValue(a.event_date))[0] || null;
+    const saleRevenue = sales.reduce((sum, item) => sum + (Number(item.quantity || 1) * Number(item.unit_price || 0)), 0);
+    const pendingSales = sales.filter((item) => String(item.status || '').toLowerCase() !== 'pago').length;
+    const occupancyRate = activePaddocks ? Math.round((occupiedPaddocks.size / activePaddocks) * 100) : 0;
+    const animalsPerOccupiedPaddock = occupiedPaddocks.size ? (activeAnimals.length / occupiedPaddocks.size).toFixed(1).replace('.', ',') : '0';
+
+    el.mapTitle.textContent = 'Geral';
+    el.mapSubtitle.textContent = 'Resumo da fazenda com estrutura, áreas e operação';
+    el.mapContent.innerHTML = `
+      <div class="panel livestock-panel-shell">
+        <div class="livestock-panel-hero">
+          <div class="livestock-panel-copy">
+            <div class="livestock-panel-kicker">Aba geral da fazenda</div>
+            <h2>Visão consolidada da propriedade com os principais números da fazenda</h2>
+            <p>${farms.length ? `${escapeHtml(primaryFarm.name || 'Fazenda principal')} em ${escapeHtml(primaryFarm.location || 'localização não informada')}, com ${totalFarmArea ? `${totalFarmArea.toLocaleString('pt-BR')} ha` : 'área total não definida'}, ${plots.length} talhão(ões) e ${paddocks.length} pasto(s) cadastrados.` : 'Cadastre a fazenda, os talhões e os pastos para centralizar as informações operacionais nesta aba.'}</p>
+            <div class="livestock-panel-actions">
+              <button class="ghost small" type="button" data-farm-livestock-open="plots">Abrir talhões</button>
+              <button class="ghost small" type="button" data-farm-livestock-open="paddocks">Abrir pastos</button>
+              <button class="ghost small" type="button" data-farm-livestock-open="employees">Abrir equipe</button>
+              <button class="ghost small" type="button" data-farm-livestock-open="lots">Abrir lotes</button>
+            </div>
+          </div>
+          <div class="livestock-panel-main-card">
+            <div class="livestock-panel-main-label">Visão central da fazenda</div>
+            <div class="livestock-panel-main-value">${totalFarmArea ? `${totalFarmArea.toLocaleString('pt-BR')} ha` : '-'}</div>
+            <div class="livestock-panel-main-meta">área total cadastrada da propriedade</div>
+            <div class="livestock-panel-main-stats">
+              <div><strong>${plots.length}</strong><span>talhões cadastrados</span></div>
+              <div><strong>${paddocks.length}</strong><span>pastos cadastrados</span></div>
+              <div><strong>${employees.length}</strong><span>pessoa(s) na equipe</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="livestock-mini-grid">
+          <div class="livestock-mini-card">
+            <div class="livestock-mini-label">Fazenda principal</div>
+            <div class="livestock-mini-value">${escapeHtml(primaryFarm.name || 'Sem cadastro')}</div>
+            <div class="livestock-mini-meta">${escapeHtml(primaryFarm.location || 'Defina a localização da propriedade')}</div>
+          </div>
+          <div class="livestock-mini-card">
+            <div class="livestock-mini-label">Talhões</div>
+            <div class="livestock-mini-value">${plots.length}</div>
+            <div class="livestock-mini-meta">${totalPlotArea ? `${totalPlotArea.toLocaleString('pt-BR')} ha em área agrícola` : 'Sem área agrícola informada'}</div>
+          </div>
+          <div class="livestock-mini-card">
+            <div class="livestock-mini-label">Pastos</div>
+            <div class="livestock-mini-value">${activePaddocks}/${paddocks.length}</div>
+            <div class="livestock-mini-meta">${totalPaddockArea ? `${totalPaddockArea.toLocaleString('pt-BR')} ha de pastagem` : 'Sem área de pastagem informada'}</div>
+          </div>
+          <div class="livestock-mini-card">
+            <div class="livestock-mini-label">Equipe</div>
+            <div class="livestock-mini-value">${employees.length}</div>
+            <div class="livestock-mini-meta">${employees.length ? 'funcionário(s) vinculados à operação' : 'Nenhum funcionário cadastrado'}</div>
+          </div>
+          <div class="livestock-mini-card">
+            <div class="livestock-mini-label">Rebanho ativo</div>
+            <div class="livestock-mini-value">${activeAnimals.length}</div>
+            <div class="livestock-mini-meta">${femaleAnimals} fêmea(s), ${maleAnimals} macho(s) e ${calves} bezerro(s)</div>
+          </div>
+          <div class="livestock-mini-card">
+            <div class="livestock-mini-label">Comercialização</div>
+            <div class="livestock-mini-value">${money(saleRevenue)}</div>
+            <div class="livestock-mini-meta">${sales.length} venda(s), ${pendingSales} pendente(s) e ${lots.length} lote(s)</div>
+          </div>
+        </div>
+        <div class="livestock-detail-grid">
+          <div class="livestock-detail-card">
+            <div class="panel-title">Estrutura e ocupação</div>
+            <div class="list-compact">
+              <div class="list-item"><strong>Pastos ocupados</strong><div>${occupiedPaddocks.size} em uso · ${occupancyRate}% dos pastos ativos</div></div>
+              <div class="list-item"><strong>Animais por pasto ocupado</strong><div>${animalsPerOccupiedPaddock} animal(is) por pasto</div></div>
+              <div class="list-item"><strong>Cadastros incompletos</strong><div>${animalsWithoutLot} sem lote e ${animalsWithoutPaddock} sem pasto</div></div>
+            </div>
+          </div>
+          <div class="livestock-detail-card">
+            <div class="panel-title">Manejo e movimentação</div>
+            <div class="livestock-detail-highlight">
+              <strong>${escapeHtml(lastEvent?.event_type || 'Sem eventos registrados')}</strong>
+              <span>${lastEvent ? `${formatShortDate(lastEvent.event_date)}${lastEvent.notes ? ` · ${escapeHtml(lastEvent.notes)}` : ''}` : 'Registre pesagens, vacinações e movimentações para acompanhar o manejo.'}</span>
+            </div>
+            <div class="livestock-detail-highlight">
+              <strong>${avgWeight ? `${avgWeight} kg de peso médio` : 'Sem pesagens registradas'}</strong>
+              <span>${sanitaryEvents.length} evento(s) sanitário(s) e ${events.length} registro(s) totais de manejo</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    el.mapContent.querySelectorAll('[data-farm-livestock-open]').forEach((btn) => {
+      btn.onclick = async () => {
+        const target = btn.getAttribute('data-farm-livestock-open');
+        if (['plots', 'paddocks'].includes(target)) {
+          state.currentModule = target;
+          renderNav();
+          await switchModule(target);
+          return;
+        }
+        if (target === 'employees') {
+          openSettingsAuth('employees');
+          return;
+        }
+        await setGroup('livestock');
+        state.currentModule = target;
+        renderNav();
+        await switchModule(target);
+      };
+    });
+    return;
+  }
 
   if (type === 'livestock') {
     const metrics = {
@@ -1343,14 +1653,155 @@ function setupAnimalEventsForm(row = null) {
 
   toggleMovementFields();
 }
+
+function setupAnimalsForm(row = null) {
+  const form = document.getElementById('modal-form');
+  if (!form) return;
+
+  const entryMode = form.querySelector('[name="entry_mode"]');
+  const modeTabs = form.querySelectorAll('[data-entry-mode-tab]');
+  const earTagWrap = form.querySelector('[data-field-wrap="ear_tag"]');
+  const prefixWrap = form.querySelector('[data-field-wrap="ear_tag_prefix"]');
+  const quantityWrap = form.querySelector('[data-field-wrap="quantity"]');
+  const earTagField = form.querySelector('[name="ear_tag"]');
+  const prefixField = form.querySelector('[name="ear_tag_prefix"]');
+  const quantityField = form.querySelector('[name="quantity"]');
+
+  const toggleFields = () => {
+    const isBatch = !row && entryMode && entryMode.value === 'lote';
+
+    modeTabs.forEach((tab) => {
+      tab.classList.toggle('active', tab.dataset.entryModeTab === (entryMode?.value || 'unidade'));
+    });
+
+    if (entryMode) {
+      const modeWrap = form.querySelector('[data-field-wrap="entry_mode"]');
+      if (modeWrap) modeWrap.style.display = row ? 'none' : '';
+    }
+
+    if (earTagWrap) earTagWrap.style.display = isBatch ? 'none' : '';
+    if (prefixWrap) prefixWrap.style.display = isBatch ? '' : 'none';
+    if (quantityWrap) quantityWrap.style.display = isBatch ? '' : 'none';
+
+    if (earTagField) earTagField.required = !isBatch;
+    if (prefixField) prefixField.required = isBatch;
+    if (quantityField) quantityField.required = isBatch;
+
+    if (!isBatch) {
+      if (quantityField) quantityField.value = '1';
+      return;
+    }
+
+    if (earTagField) earTagField.value = '';
+    if (quantityField && (!quantityField.value || Number(quantityField.value) <= 0)) quantityField.value = '1';
+  };
+
+  if (entryMode) entryMode.onchange = toggleFields;
+  modeTabs.forEach((tab) => {
+    tab.onclick = () => {
+      if (!entryMode) return;
+      entryMode.value = tab.dataset.entryModeTab;
+      toggleFields();
+    };
+  });
+  toggleFields();
+}
+
+function setupSalesForm(row = null) {
+  const form = document.getElementById('modal-form');
+  if (!form) return;
+
+  const saleType = form.querySelector('[name="sale_type"]');
+  const saleScope = form.querySelector('[name="sale_scope"]');
+  const animalWrap = form.querySelector('[data-field-wrap="animal_id"]');
+  const lotWrap = form.querySelector('[data-field-wrap="lot_id"]');
+  const itemWrap = form.querySelector('[data-field-wrap="item_id"]');
+  const quantityWrap = form.querySelector('[data-field-wrap="quantity"]');
+  const animalField = form.querySelector('[name="animal_id"]');
+  const lotField = form.querySelector('[name="lot_id"]');
+  const itemField = form.querySelector('[name="item_id"]');
+  const quantityField = form.querySelector('[name="quantity"]');
+
+  const countAnimalsByLot = (lotId) => {
+    return (state.lookups.animals || []).filter((item) =>
+      String(item.lot_id || '') === String(lotId || '') &&
+      String(item.status || '').toLowerCase() === 'ativo'
+    ).length;
+  };
+
+  const syncQuantity = () => {
+    if (!quantityField || !saleType) return;
+    const isAnimal = saleType.value === 'animal';
+    const isLot = isAnimal && saleScope && saleScope.value === 'lote';
+
+    if (isAnimal && !isLot) {
+      quantityField.value = '1';
+      quantityField.readOnly = true;
+      return;
+    }
+
+    quantityField.readOnly = false;
+    if (isLot && lotField && lotField.value) {
+      const total = countAnimalsByLot(lotField.value);
+      if (!quantityField.value || Number(quantityField.value) <= 0) quantityField.value = String(total || 1);
+    }
+  };
+
+  const toggleFields = () => {
+    const isAnimal = saleType && saleType.value === 'animal';
+    const isLot = isAnimal && saleScope && saleScope.value === 'lote';
+
+    if (saleScope) {
+      const scopeWrap = form.querySelector('[data-field-wrap="sale_scope"]');
+      if (scopeWrap) scopeWrap.style.display = isAnimal ? '' : 'none';
+      saleScope.required = isAnimal;
+      if (!isAnimal) saleScope.value = 'unidade';
+    }
+
+    if (animalWrap) animalWrap.style.display = isAnimal && !isLot ? '' : 'none';
+    if (lotWrap) lotWrap.style.display = isLot ? '' : 'none';
+    if (itemWrap) itemWrap.style.display = isAnimal ? 'none' : '';
+    if (quantityWrap) quantityWrap.style.display = (!isAnimal || isLot) ? '' : 'none';
+
+    if (animalField) animalField.required = isAnimal && !isLot;
+    if (lotField) lotField.required = isLot;
+    if (itemField) itemField.required = !isAnimal;
+    if (quantityField) quantityField.required = !isAnimal || isLot;
+
+    if (isAnimal) {
+      if (itemField) itemField.value = '';
+    } else {
+      if (animalField) animalField.value = '';
+      if (lotField) lotField.value = '';
+    }
+
+    syncQuantity();
+  };
+
+  if (saleType) saleType.onchange = toggleFields;
+  if (saleScope) saleScope.onchange = toggleFields;
+  if (lotField) lotField.onchange = syncQuantity;
+
+  if (row && quantityField && row.quantity && !quantityField.value) {
+    quantityField.value = String(row.quantity);
+  }
+
+  toggleFields();
+}
+
 function openForm(resource, row = null) {
   state.editingId = row?.id || null;
   const title = state.editingId ? `Editar ${currentModuleConfig().title}` : `Novo ${currentModuleConfig().title}`;
   const fields = FORMS[resource] || [];
+  const modeTabs = resource === 'animals' && !row ? `
+    <div class="entry-mode-tabs" data-entry-mode-tabs>
+      <button class="entry-mode-tab active" type="button" data-entry-mode-tab="unidade">Por unidade</button>
+      <button class="entry-mode-tab" type="button" data-entry-mode-tab="lote">Por lote</button>
+    </div>` : '';
   showModal({
     small: fields.length <= 4,
     title,
-    body: `<div class="form-grid">${fields.map((field) => `<div class="${field.type === 'textarea' || field.type === 'checkboxlist' ? 'full-span' : ''}" data-field-wrap="${field.name}"><label>${field.label}</label>${inputControl(resource, field, row ? row[field.name] : null)}</div>`).join('')}</div>`,
+    body: `${modeTabs}<div class="form-grid">${fields.map((field) => `<div class="${field.type === 'textarea' || field.type === 'checkboxlist' ? 'full-span' : ''}" data-field-wrap="${field.name}"><label>${field.label}</label>${inputControl(resource, field, row ? row[field.name] : null)}</div>`).join('')}</div>`,
     submitLabel: state.editingId ? 'Salvar alteração' : 'Salvar',
     onSubmit: async (formData) => {
       const payload = {};
@@ -1384,9 +1835,49 @@ function openForm(resource, row = null) {
           delete payload.paddock_future_id;
         }
       }
-      const endpoint = SPECIAL_ENDPOINTS[resource] || `/${resource}`;
-      if (state.editingId && !SPECIAL_ENDPOINTS[resource]) await api(`/${resource}/${state.editingId}`, { method: 'PUT', body: JSON.stringify(payload) });
-      else await api(endpoint, { method: 'POST', body: JSON.stringify(payload) });
+      if (resource === 'animals') {
+        const entryMode = String(payload.entry_mode || formData.get('entry_mode') || 'unidade');
+        payload.entry_mode = entryMode;
+        if (entryMode === 'lote') {
+          delete payload.ear_tag;
+          if (!payload.ear_tag_prefix) throw new Error('Informe o prefixo do brinco para o lançamento por lote.');
+          if (!payload.quantity || Number(payload.quantity) <= 0) throw new Error('Informe a quantidade para o lançamento por lote.');
+        } else {
+          delete payload.ear_tag_prefix;
+          payload.quantity = 1;
+          if (!payload.ear_tag) throw new Error('Informe o brinco para o lançamento por unidade.');
+        }
+      }
+      if (resource === 'sales') {
+        const saleType = String(payload.sale_type || formData.get('sale_type') || '');
+        const saleScope = String(payload.sale_scope || formData.get('sale_scope') || 'unidade');
+        if (saleType === 'animal') {
+          payload.sale_scope = saleScope;
+          delete payload.item_id;
+          if (saleScope === 'lote') {
+            delete payload.animal_id;
+            if (!payload.lot_id) throw new Error('Selecione o lote para lançamento por lote.');
+            if (!payload.quantity || Number(payload.quantity) <= 0) throw new Error('Informe a quantidade de animais do lote.');
+          } else {
+            delete payload.lot_id;
+            if (!payload.animal_id) throw new Error('Selecione o animal para lançamento por unidade.');
+            payload.quantity = 1;
+          }
+        } else {
+          payload.sale_scope = 'unidade';
+          delete payload.animal_id;
+          delete payload.lot_id;
+          if (!payload.item_id) throw new Error('Selecione o item para venda de produto.');
+        }
+      }
+      let endpoint = SPECIAL_ENDPOINTS[resource] || `/${resource}`;
+      const method = state.editingId && !SPECIAL_ENDPOINTS[resource] ? 'PUT' : 'POST';
+      if (resource === 'animals' && !state.editingId) {
+        endpoint = payload.entry_mode === 'lote' ? '/animals/register' : '/animals';
+      } else if (state.editingId && !SPECIAL_ENDPOINTS[resource]) {
+        endpoint = `/${resource}/${state.editingId}`;
+      }
+      await api(endpoint, { method, body: JSON.stringify(payload) });
       hideModal();
       await loadLookups();
       await loadCrudData();
@@ -1397,7 +1888,9 @@ function openForm(resource, row = null) {
     }
   });
 
+  if (resource === 'animals') setupAnimalsForm(row);
   if (resource === 'animal_events') setupAnimalEventsForm(row);
+  if (resource === 'sales') setupSalesForm(row);
 }
 
 
@@ -1406,6 +1899,26 @@ async function renderSettingsParameters() {
   const items = (rows.data || []).map((item) => ({ ...item, value: !!item.value }));
   el.settingsContent.innerHTML = `
     <form id="system-parameters-form" class="settings-parameters-form">
+      <div class="settings-brand-card">
+        <div class="settings-brand-main">
+          <div class="settings-brand-pill">
+            <div class="settings-brand-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4cdf8a" stroke-width="2.2" stroke-linecap="round">
+                <path d="M12 22V12M12 12C12 7 17 3 21 3C21 8 18 12 12 12ZM12 12C12 7 7 3 3 3C3 8 6 12 12 12Z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="settings-brand-kicker">Gestor Agro</div>
+              <div class="settings-brand-title">Configuracoes do Sistema</div>
+            </div>
+          </div>
+          <p class="settings-brand-text">Ajuste os modulos e o comportamento global da aplicacao com a mesma linguagem visual do selo principal do sistema.</p>
+        </div>
+        <div class="settings-brand-side">
+          <div class="settings-brand-badge">Area protegida</div>
+          <div class="settings-brand-meta">Somente perfis autorizados podem alterar estes parametros globais.</div>
+        </div>
+      </div>
       <div class="panel settings-parameters-panel">
         <div class="panel-title">Parâmetros do Sistema</div>
         <div class="parameter-list">
@@ -1584,7 +2097,7 @@ async function loadHomeDashboard() {
 
   if (el.dashboardCards) el.dashboardCards.innerHTML = '';
 
-  renderShortcutGrid();
+  renderShortcutGrid(summary, inmetReport);
   renderHomeCharts(summary, inmetReport, inmetError);
 }
 async function switchModule(key) {
@@ -1614,6 +2127,7 @@ async function switchModule(key) {
   el.pageTitle.textContent = module.title;
   el.pageSubtitle.textContent = module.subtitle;
   el.tableTitle.textContent = module.title;
+  renderCrudHighlight(module);
   el.newRecordBtn.classList.toggle('hidden', !canAction(module.module, 'create'));
   await loadCrudData();
 }
@@ -1718,9 +2232,20 @@ if (el.inmetCity) el.inmetCity.onchange = () => {
 };
 if (el.homeBtn) el.homeBtn.onclick = () => setGroup('home');
 if (el.brandBtn) el.brandBtn.onclick = () => setGroup('home');
-if (el.userMenuBtn) el.userMenuBtn.onclick = (event) => { event.stopPropagation(); el.userDropdown.classList.toggle('hidden'); };
+if (el.userMenuBtn && el.userDropdown) {
+  el.userMenuBtn.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    el.userDropdown.classList.toggle('hidden');
+  };
+  el.userDropdown.onclick = (event) => {
+    event.stopPropagation();
+  };
+}
 document.addEventListener('click', (event) => {
-  if (el.userDropdown && !event.target.closest('.user-menu')) el.userDropdown.classList.add('hidden');
+  if (el.userDropdown && !event.target.closest('.user-menu')) {
+    el.userDropdown.classList.add('hidden');
+  }
 });
 
 window._goLivestock  = function() { openShortcut('livestock'); };
@@ -1765,6 +2290,7 @@ window._goFinance    = function() { openShortcut('finance'); };
 
 
 bootstrap();
+
 
 
 

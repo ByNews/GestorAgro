@@ -1,58 +1,44 @@
-Gestor Agro 4.0 - Electron + PostgreSQL
-========================================
+Gestor Agro 4.0 - Web + PostgreSQL
+==================================
 
-Novidades desta versão:
-- Atalhos iniciais: Fazenda, Pecuária, Estoque, Agricultura, Financeiro,
-  Contas a pagar, Contas a receber e Configurações
-- Janelas de atalho sem a barra de outros atalhos
-- Configurações com reautenticação
-- Controle de acesso por atalho (checkboxes no cadastro de usuário)
-- Mapa fictício de qualidade para Pecuária e Agricultura
-- Formulários em janela/modal pequena para "Novo registro"
-- Visual verde escuro + verde claro + branco
+Novidades desta versao:
+- Atalhos iniciais: Fazenda, Pecuaria, Estoque, Agricultura, Financeiro,
+  Contas a pagar, Contas a receber e Configuracoes
+- Configuracoes com reautenticacao
+- Controle de acesso por atalho
+- Mapa de qualidade para Pecuaria e Agricultura
+- Interface HTML/CSS/JS servida direto pelo Express
 
 Estrutura de pastas:
 --------------------
-  INSTALAR.bat              → Execute este arquivo para instalar tudo
-  package.json              → Configuração do projeto
-  .env                      → Configurações do banco (criado automaticamente)
+  INSTALAR.bat              -> Prepara o ambiente e inicia a versao web
+  package.json              -> Configuracao do projeto
+  .env                      -> Configuracoes do banco
   codigo-fonte/
-    principal/              → Processo principal do Electron (main.js, preload.js)
-    interface/              → Telas HTML/CSS/JS da aplicação
-    imagens/                → Imagens e ícones
-    servidor/               → Servidor Express + integração PostgreSQL
-      sql/                  → Scripts SQL (criação de tabelas)
+    web.js                  -> Inicializador da aplicacao web
+    interface/              -> Telas HTML/CSS/JS da aplicacao
+    imagens/                -> Imagens e icones
+    servidor/               -> Servidor Express + integracao PostgreSQL
+      sql/                  -> Scripts SQL
   configuracoes/
-    .env.exemplo            → Modelo de configuração do banco de dados
-  temporarios/              → Arquivos temporários de testes INMET
-  testes/                   → Scripts de teste
-  distribuicao/             → Instalador gerado (criado após rodar INSTALAR.bat)
+    .env.exemplo            -> Modelo de configuracao do banco
+  testes/                   -> Scripts de teste
+  distribuicao/             -> Artefatos antigos da versao desktop
 
 Como instalar:
 --------------
-1. Certifique-se de ter o Node.js LTS instalado (https://nodejs.org)
+1. Certifique-se de ter o Node.js LTS instalado: https://nodejs.org
 2. Certifique-se de ter o PostgreSQL instalado e rodando
-3. Crie o banco de dados:  CREATE DATABASE farmmanager;
-4. Execute o arquivo INSTALAR.bat — ele faz tudo automaticamente:
-   - Instala as dependências
-   - Configura o .env
-   - Gera o instalador na pasta "distribuicao"
+3. Crie o banco de dados: `CREATE DATABASE farmmanager;`
+4. Execute `INSTALAR.bat`
 
-Para desenvolvimento (sem gerar instalador):
---------------------------------------------
-1. Siga os passos 1 a 3 acima
-2. Execute:  npm install
-3. Execute:  npm start
+Para desenvolvimento:
+---------------------
+1. Execute `npm install`
+2. Execute `npm start`
+3. Abra `http://localhost:4312`
 
 Login inicial:
 --------------
-  Usuário: DEV
-  Senha:   352155
-
-Imagens:
----------
-
-<img width="1909" height="940" alt="Tela_Inicial" src="https://github.com/user-attachments/assets/7f420a11-fe02-4c7b-9bfe-d02be077a30e" />
-<img width="1911" height="961" alt="image" src="https://github.com/user-attachments/assets/8a66d4d4-8d36-43c9-9902-5958c90dff20" />
-
-
+Usuario: DEV
+Senha: 352155
